@@ -66,3 +66,5 @@ Windows 一键升级依据 [GitHub Releases](https://docs.github.com/en/rest/rel
 按 OpenAI 官方文档优先实现 Responses；保留兼容 Chat 和 Claude Messages。生成答复以普通文字和来源清单展示，用户可以保存为待核对笔记。将费用确认、输出上限、来源变化拒绝、密钥加密和升级保留一并实现，未使用第三方统一代理转发密钥。服务商接入依据、当前兼容范围及未付费联测的说明见 [AI 文档](ai.md)。
 
 后续优先评估人工标注的回答正确性与引用支持评测、适合大库的索引优化和结构化文献比较。自动代理、云端全文索引、自动改写已保存笔记与无审查批量分析本轮未实现。
+
+补充检查了 [PaperQA2](https://github.com/Future-House/paper-qa)、[Zotero Better Notes](https://github.com/windingwind/zotero-better-notes) 和 [Open WebUI 的本机／云端连接文档](https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/)。PaperQA2 将文献检索、片段证据选择和回答分开，并提供可复现实验入口；下一阶段应借鉴其评测思路，用社会学问题检验答案和出处支持，不照搬其科学问答成绩。Better Notes 的笔记关系、批注转笔记和 Markdown 交换值得用于后续阅读积累整合，本版尚未接入其插件 API 或实现双向同步。Open WebUI 区分模型连接及实际推理位置，进一步支持本项目把服务地址与模型 ID 分开、允许多个连接及手动填写模型；没有引入其部署栈、流式聊天或自动模型发现。
