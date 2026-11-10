@@ -50,7 +50,8 @@ def resolve_desktop_directory(explicit=None):
     pointer = location_file()
     if pointer.is_file():
         value = _read(pointer).get("data_dir")
-        if not isinstance(value, str) or not Path(value).is_absolute() or not Path(value).is_dir():
+        if (not isinstance(value, str) or not Path(value).is_absolute() or not Path(value).is_dir()
+                or not (Path(value) / "library.sqlite3").is_file()):
             raise UpgradeError("之前的资料目录暂时不可用，请先连接原磁盘；不会自动创建空库替代。")
         return Path(value).resolve()
     return default_data_dir()
@@ -78,10 +79,13 @@ def prepare_upgrade(directory, version):
     old = previous.get("version")
     if old is not None and _version(old) > current:
         raise UpgradeError("这份资料已由更新版本打开，请使用相同或更新的软件版本，避免降级损坏资料。")
+    database = directory / "library.sqlite3"
+    if not database.is_file() and (marker.exists() or (directory / "preferences.json").exists()
+                                   or (directory / "models").exists()):
+        raise UpgradeError("发现原资料的设置，但数据库文件缺失，已停止创建空库。请连接原磁盘或从备份恢复。")
     if old == version:
         return previous
     report = {"version": version, "previous_version": old or "legacy", "inherited": False, "backup": ""}
-    database = directory / "library.sqlite3"
     if not database.exists():
         return report
     report["inherited"] = True
@@ -105,6 +109,9 @@ def prepare_upgrade(directory, version):
         with tempfile.TemporaryDirectory(prefix=".upgrade-", dir=backups) as temp:
             staging = Path(temp)
             with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as source:
+                tables = {r[0] for r in source.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+                if not {"items", "files", "chunks", "chunks_fts", "vectors", "state"} <= tables:
+                    raise UpgradeError("原数据库未被识别为 SocioLibrary 资料库，已停止初始化；不会向其他数据库写入。")
                 with closing(sqlite3.connect(staging / "library.sqlite3")) as target:
                     source.backup(target, pages=256, progress=check_progress, sleep=0.05)
                     if target.execute("PRAGMA quick_check").fetchone()[0] != "ok":

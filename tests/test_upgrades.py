@@ -96,6 +96,7 @@ def test_remembers_custom_folder_respects_overrides_and_never_silently_replaces_
     assert resolve_desktop_directory() == profile / "SocioLit"
     custom = tmp_path / "custom"
     custom.mkdir()
+    (custom / "library.sqlite3").write_bytes(b"Synthetic path-resolution placeholder")
     remember_directory(custom)
     assert resolve_desktop_directory() == custom
     override = tmp_path / "override"
@@ -142,4 +143,25 @@ def test_failed_backup_keeps_original_and_never_publishes_partial_snapshot(tmp_p
         initialize_desktop_library(tmp_path)
     assert (tmp_path / "library.sqlite3").read_bytes() == original
     assert (tmp_path / "desktop-version.json").read_bytes() == marker
+    assert not list((tmp_path / "backups").iterdir())
+
+
+@pytest.mark.parametrize("version", ["0.3.0", __version__])
+def test_missing_database_is_never_silently_recreated_for_an_existing_profile(tmp_path, version):
+    seed_upgrade_fixture(tmp_path)
+    (tmp_path / "desktop-version.json").write_text(json.dumps({"version": version}), encoding="utf-8")
+    (tmp_path / "library.sqlite3").unlink()
+    with pytest.raises(UpgradeError, match="数据库文件缺失"):
+        initialize_desktop_library(tmp_path)
+    assert not (tmp_path / "library.sqlite3").exists()
+
+
+def test_an_unrecognized_database_is_not_given_soc_library_tables(tmp_path):
+    with sqlite3.connect(tmp_path / "library.sqlite3") as db:
+        db.execute("CREATE TABLE unrelated (value TEXT)")
+        db.execute("INSERT INTO unrelated VALUES('synthetic unrelated database')")
+    original = (tmp_path / "library.sqlite3").read_bytes()
+    with pytest.raises(UpgradeError, match="未被识别"):
+        initialize_desktop_library(tmp_path)
+    assert (tmp_path / "library.sqlite3").read_bytes() == original
     assert not list((tmp_path / "backups").iterdir())
