@@ -1,0 +1,67 @@
+# 仅公开期刊资料。不得填本地路径、私人收藏/笔记或 API 密钥。
+# 七刊的 Crossref /journals/{ISSN}/works 均返回404；OpenAlex 归刊覆盖不足。
+# 《社会》《人口研究》支持过刊回查；《社会学研究》《中国人口科学》使用当期快照。
+# 其他三刊尚未接通自动采集。
+# 核验详情见 docs/discovery-research.md。
+[discovery]
+auto_on_start = true
+lookback_days = 90
+overlap_days = 7
+max_pages = 20
+
+[[journals]]
+name = "社会学研究"
+issns = ["1002-5936"]
+homepage = "https://shxyj.ajcass.com/"
+enabled = true
+sources = ["cass_current_toc"]
+status = "official_current_snapshot"
+
+[[journals]]
+name = "社会学评论"
+issns = ["2095-5154"]
+homepage = "https://src.ruc.edu.cn/"
+enabled = false
+sources = []
+status = "pending_verified_source"
+
+[[journals]]
+name = "社会"
+issns = ["1004-8804"]
+homepage = "https://www.society.shu.edu.cn/CN/1004-8804/home.shtml"
+enabled = true
+sources = ["official_toc"]
+status = "official_issue_metadata"
+
+[[journals]]
+name = "人口学刊"
+issns = ["1004-129X"]
+# 吉林大学官网直接链接的主办单位期刊介绍页；尚未确认独立刊站。
+homepage = "https://hssra.jlu.edu.cn/xsqk/rkxk.htm"
+enabled = false
+sources = []
+status = "pending_verified_source"
+
+[[journals]]
+name = "人口研究"
+issns = ["1000-6087"]
+homepage = "https://rkyj.ruc.edu.cn/CN/1000-6087/home.shtml"
+enabled = true
+sources = ["official_toc"]
+status = "official_issue_metadata"
+
+[[journals]]
+name = "中国人口科学"
+issns = ["1000-7881"]
+homepage = "https://zgrkkx.ajcass.com/"
+enabled = true
+sources = ["cass_current_toc"]
+status = "official_current_snapshot"
+
+[[journals]]
+name = "中国社会科学"
+issns = ["1002-4921"]
+homepage = "https://sscp.cssn.cn/kbw/zgshkx/"
+enabled = false
+sources = []
+status = "pending_verified_source"

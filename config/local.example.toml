@@ -1,0 +1,27 @@
+# 复制为项目根目录 config.local.toml（已被 .gitignore 排除）。
+# 配置中使用正斜杠；不要把真实路径提交到 GitHub。
+[local]
+# 默认 Windows: %LOCALAPPDATA%/SocioLit；Linux/macOS: ~/.local/share/SocioLit
+# data_dir = "D:/Research/SocioLitData"
+
+[zotero]
+base_url = "http://127.0.0.1:23119/api"
+library_name = "default"
+# 改为自己的 Zotero/storage 和链接附件目录。空数组只导入元数据。
+allowed_roots = []
+# allowed_roots = ["E:/ReferenceManager/storage", "E:/Research/Papers"]
+
+[semantic]
+# 限定试点时，填写 Zotero 文件夹名称关键词，自动包含匹配文件夹的子文件夹。
+# collection_keywords = ["生育", "婚育"]
+# 默认在本地资料目录 models/e5-small；首次请运行 prepare-model。
+# model_path = "D:/Research/Models/e5-small"
+
+[discovery]
+auto_on_start = true
+lookback_days = 90
+overlap_days = 7
+max_pages = 20
+
+# 将 public-journals.toml 中所需的 [[journals]] 段追加到本文件。
+# CLI 不会隐式合并两个配置，以免把私人设置带入公开自动化。

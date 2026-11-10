@@ -1,0 +1,57 @@
+# Python / development
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local-only configuration and credentials
+.env
+.env.*
+!.env.example
+config.local.toml
+*.local.toml
+*.pem
+*.key
+credentials*.json
+secrets*.json
+
+# Never include research files, Zotero databases, indexes, or model caches.
+*.pdf
+*.epub
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.bak
+*.zotero
+storage/
+data/
+.sociolit/
+models/
+.cache/
+exports/
+reports/
+outputs/
+work/
+logs/
+*.log
+
+# An arbitrary Zotero JSON/RIS/BibTeX export is private even though metadata.
+*.ris
+*.bib
+zotero*.json
+library*.json

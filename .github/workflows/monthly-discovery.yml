@@ -1,0 +1,67 @@
+name: Monthly public journal discovery
+
+on:
+  workflow_dispatch:
+  schedule:
+    # First day of each month, 02:17 UTC / 10:17 Asia/Shanghai.
+    - cron: '17 2 1 * *'
+
+# This workflow never creates commits, issues, or pull requests.
+permissions:
+  contents: read
+
+concurrency:
+  group: public-journal-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    # Explicitly opt in after reviewing the PUBLIC journal configuration.
+    if: vars.ENABLE_JOURNAL_DISCOVERY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, verified 2026-11-06
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6, verified 2026-11-06
+        with:
+          python-version: '3.11'
+      - name: Install public discovery dependencies
+        run: python -m pip install .
+      - name: Discover public metadata
+        id: discover
+        continue-on-error: true
+        env:
+          OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
+          CROSSREF_MAILTO: ${{ secrets.CROSSREF_MAILTO }}
+        run: >-
+          python -m sociolit discover
+          --config config/public-journals.toml
+          --data-dir "$RUNNER_TEMP/sociolit"
+          --output "$RUNNER_TEMP/discovery"
+      - name: Show discovery digest
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/discovery/digest.md" ]; then
+            cat "$RUNNER_TEMP/discovery/digest.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Discovery report was not produced; inspect the failed step.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Save public metadata reports only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4, verified 2026-11-06
+        with:
+          name: public-journal-discovery-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/discovery/records.json
+            ${{ runner.temp }}/discovery/digest.md
+          if-no-files-found: warn
+          retention-days: 35
+          include-hidden-files: false
+      - name: Preserve failure status after saving partial report
+        if: steps.discover.outcome == 'failure'
+        run: exit 1

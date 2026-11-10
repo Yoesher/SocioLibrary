@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SocioLibrary · 社会学文献知识库</title><link rel="stylesheet" href="/static/style.css"></head>
+<body><main><header><div class="eyebrow">SOCIOLIBRARY / 本地研究资料库</div><h1>让阅读留下可追溯的积累。</h1>
+<p>检索你的文献、核对原文页码，持续留意期刊的新研究。</p><span class="badge">资料保存在本机</span></header>
+<section class="toolbar"><button id="import">一键导入 Zotero</button><button id="embed" class="secondary">构建语义索引</button><button id="discover" class="secondary">检查期刊更新</button></section>
+<p id="notice" role="status">正在连接本地资料库…</p><div id="stats" class="stats"></div>
+<section class="searchbox"><h2>从一个研究问题开始</h2><form id="search"><input id="query" maxlength="500" required placeholder="例如：家庭再生产、就业退出、平台劳动"><select id="mode"><option value="fulltext">全文检索</option><option value="semantic">语义检索</option></select><button>检索</button></form>
+<p class="hint" id="scope-hint">全文检索支持中英文。语义检索需先安装本地模型并构建索引；结果相似度不代表引文证据强度。</p></section>
+<div id="results" aria-live="polite"></div><section class="bottom"><h2>期刊订阅</h2><div id="journals"></div><p id="updates"></p><p><a href="/api/discovery/report" target="_blank" rel="noopener">查看最近一次更新报告 ↗</a></p>
+<h2>导入与页面提示</h2><ul id="warnings"></ul><p><a href="/api/files/issues" target="_blank" rel="noopener">查看全部附件提示 ↗</a></p></section>
+<footer>PDF 页序与文章印刷页码可能不同。扫描页需要 OCR。个人笔记始终单独标注。</footer></main>
+<script src="/static/app.js"></script></body></html>
