@@ -1,0 +1,47 @@
+name: Repackage Windows notices
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        required: true
+        description: Successful Windows desktop build run in this repository
+        default: '42744516856'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  repackage:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Retrieve verified build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.source_run }}
+        run: gh run download $env:SOURCE_RUN --repo $env:GITHUB_REPOSITORY --name SocioLibrary-Windows-x64 --dir previous
+      - name: Compact notice filenames and package
+        shell: pwsh
+        run: |
+          Expand-Archive previous/SocioLibrary-0.2.0-Windows-x64-Portable.zip -DestinationPath dist
+          $before = (Get-FileHash dist/SocioLibrary/SocioLibrary.exe).Hash
+          python scripts/compact_licenses.py
+          if ($LASTEXITCODE -ne 0) { throw 'Notice compaction failed' }
+          if ((Get-FileHash dist/SocioLibrary/SocioLibrary.exe).Hash -ne $before) { throw 'Executable unexpectedly changed' }
+          New-Item -ItemType Directory -Force release-dist | Out-Null
+          & 'C:/Program Files (x86)/Inno Setup 6/ISCC.exe' /DAppVersion=0.2.0 packaging/windows.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer packaging failed' }
+          Compress-Archive dist/SocioLibrary release-dist/SocioLibrary-0.2.0-Windows-x64-Portable.zip
+          Get-ChildItem release-dist -File | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+          } | Set-Content release-dist/SHA256SUMS.txt -Encoding ascii
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: SocioLibrary-Windows-x64
+          path: release-dist/*
+          retention-days: 30

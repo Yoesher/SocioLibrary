@@ -1,4 +1,5 @@
 """Include installed dependency notices in the Windows binary distribution."""
+import hashlib
 import importlib.metadata
 from pathlib import Path
 
@@ -16,5 +17,5 @@ for distribution in importlib.metadata.distributions():
         if any(word in relative.name.lower() for word in ("license", "copying", "notice")):
             source = Path(distribution.locate_file(relative))
             if source.is_file() and source.stat().st_size < 2_000_000:
-                filename = "_".join(relative.parts).replace(":", "_")
+                filename = hashlib.sha256(str(relative).encode()).hexdigest()[:12] + "-" + source.name[:48]
                 (folder / filename).write_bytes(source.read_bytes())

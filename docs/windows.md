@@ -6,7 +6,7 @@
 
 从 [GitHub Releases](https://github.com/Yoesher/SocioLibrary/releases) 下载名称包含 `Windows-x64-Setup.exe` 的安装包。双击后安装到当前用户目录，开始菜单中启动 SocioLibrary。无需安装 Python、Node 或 Docker。
 
-免安装版为 `Windows-x64-Portable.zip`，解压整个目录并运行其中的 `SocioLibrary.exe`，不可只拷贝 exe。免安装指程序无需安装，研究资料仍保存在用户资料目录，不会跟着 U 盘移动。
+免安装版为 `Windows-x64-Portable.zip`，解压整个目录并运行其中的 `SocioLibrary.exe`，不可只拷贝 exe。建议放在较短的本机路径，避免 Windows 深层目录路径长度限制。免安装指程序无需安装，研究资料仍保存在用户资料目录，不会跟着 U 盘移动。
 
 界面使用 Microsoft Edge WebView2。若机器尚未安装，请从 [微软官方页面](https://developer.microsoft.com/microsoft-edge/webview2/) 安装 Evergreen Runtime；软件不使用旧 IE 渲染器。安装包当前没有代码签名，可能显示来源未知；请核对官方发布来源和 SHA256SUMS，不应关闭系统安全保护。
 
