@@ -8,6 +8,7 @@ import socket
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 
 import httpx
@@ -70,6 +71,68 @@ def initialize_desktop_library(directory):
 
 
 class DesktopAPI:
+    def update_context(self):
+        from .update_install import native_install_context
+        context = native_install_context()
+        return {key: context[key] for key in ("supported", "mode", "message")}
+
+    def install_update(self):
+        from .software_updates import UpdateError
+        from .update_install import launch_install_helper, native_install_context
+        context = native_install_context()
+        if not context["supported"]:
+            raise UpdateError(context["message"])
+        if not self._native_lock.acquire(blocking=False):
+            raise UpdateError("请先完成笔记导出，再执行升级。")
+        if self._app.state.jobs.snapshot()["state"] == "running":
+            self._native_lock.release()
+            raise UpdateError("请先等待同步、索引或 OCR 任务完成，再升级。")
+        if not self._app.state.operation_lock.acquire(blocking=False):
+            self._native_lock.release()
+            raise UpdateError("当前资料操作尚未完成，请稍后升级。")
+        self._app.state.maintenance.set()
+        try:
+            with FileLock(str(self._directory / "library.lock"), timeout=0):
+                release, installer = self._app.state.updater.ready_installer()
+                self._helper = launch_install_helper(installer, release, self._directory, context["target"])
+            self._window.confirm_close = False
+            self._window.destroy()
+            return {"installing": True}
+        except Timeout as exc:
+            self._app.state.maintenance.clear()
+            raise UpdateError("资料库正在被其他任务使用，请等待任务完成后升级。") from exc
+        except Exception:
+            self._app.state.maintenance.clear()
+            raise
+        finally:
+            self._app.state.operation_lock.release()
+            self._native_lock.release()
+
+    def export_notes(self):
+        with self._native_lock:
+            return self._export_notes()
+
+    def _export_notes(self):
+        import webview
+
+        from .research import notes_markdown
+        paths = self._window.create_file_dialog(webview.SAVE_DIALOG, directory=str(self._directory), save_filename="SocioLibrary-阅读笔记.md",
+                                                file_types=("Markdown (*.md)",))
+        if not paths:
+            return {"saved": False}
+        path = Path(paths[0])
+        if path.suffix.lower() != ".md":
+            path = path.with_name(path.name + ".md")
+        temp = path.with_name("." + path.name + "." + uuid.uuid4().hex + ".tmp")
+        try:
+            with temp.open("w", encoding="utf-8") as output:
+                for block in notes_markdown(self._store):
+                    output.write(block)
+            os.replace(temp, path)
+        finally:
+            temp.unlink(missing_ok=True)
+        return {"saved": True}
+
     def choose_folder(self):
         import webview
         result = self._window.create_file_dialog(webview.FOLDER_DIALOG)
@@ -117,6 +180,7 @@ def main():
             message("SocioLibrary 已在运行，请在任务栏中打开现有窗口。")
         return
     server = None
+    update_stop = threading.Event()
     kernel = mutex = None
     try:
         kernel, mutex = installer_mutex()
@@ -145,6 +209,7 @@ def main():
         url = f"http://127.0.0.1:{port}"
         if args.smoke_test:
             assert Path(__file__).with_name("ocr.ps1").is_file(), "Windows OCR bridge missing from package"
+            assert Path(__file__).with_name("update.ps1").is_file(), "Windows updater helper missing from package"
             import webview  # noqa: F401
             from pypdf import PdfWriter
             from sentence_transformers import SentenceTransformer  # noqa: F401
@@ -163,21 +228,42 @@ def main():
                 assert client.get(url + "/static/app.js").status_code == 200
                 assert client.post(url + "/api/jobs/import").status_code == 403
             from .smoke import check_upgrade_fixture
+            from .update_install import native_install_context
             inherited = check_upgrade_fixture(directory, store)
-            (directory / "smoke-result.json").write_text(json.dumps({"ok": True, "version": __version__, **inherited}), encoding="utf-8")
+            context = native_install_context()
+            assert context["supported"] == bool(getattr(sys, "frozen", False))
+            (directory / "smoke-result.json").write_text(json.dumps({"ok": True, "version": __version__,
+                "updater_mode": context["mode"], **inherited}), encoding="utf-8")
             return
         remember_directory(directory)
         import webview
         bridge = DesktopAPI()
         bridge._directory = directory
+        bridge._app = app
+        bridge._store = store
+        bridge._native_lock = threading.Lock()
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
         bridge._window = webview.create_window("SocioLibrary · 社会学文献知识库", url, js_api=bridge,
                                              width=1280, height=860, min_size=(960, 680),
                                              background_color="#f4f5f0", confirm_close=True)
         def start_updates():
             from .scheduler import discover_due
-            app.state.jobs.start("discover", lambda _: discover_due(store, config))
+            try:
+                app.state.jobs.start("discover", lambda _: discover_due(store, config))
+            except RuntimeError:
+                pass
+            try:
+                app.state.updater.check(automatic=True)
+            except RuntimeError:
+                pass
         bridge._window.events.loaded += start_updates
+        def periodic_updates():
+            while not update_stop.wait(3600):
+                try:
+                    app.state.updater.check(automatic=True)
+                except RuntimeError:
+                    pass
+        threading.Thread(target=periodic_updates, daemon=True).start()
         webview.start(gui="edgechromium", debug=False, private_mode=True)
     except UpgradeError as exc:
         logging.exception("Upgrade initialization stopped")
@@ -190,6 +276,7 @@ def main():
             raise
         message("启动未完成。研究资料仍保存在原目录，请查看资料目录 logs 中的诊断记录；窗口组件需要 Microsoft Edge WebView2 Runtime。")
     finally:
+        update_stop.set()
         if server:
             server.should_exit = True
         lock.release()

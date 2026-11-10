@@ -5,7 +5,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot read application version' }
 & python scripts/create_icon.py
 if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed' }
 $arguments = @('-m','PyInstaller','--noconfirm','--clean','--windowed','--onedir','--name','SocioLibrary','--icon','build/desktop.ico',
-  '--paths','src','--add-data','src/sociolit/ocr.ps1;sociolit','--add-data','src/sociolit/static;sociolit/static','--add-data','config/public-journals.toml;sociolit/defaults',
+  '--paths','src','--add-data','src/sociolit/ocr.ps1;sociolit','--add-data','src/sociolit/update.ps1;sociolit','--add-data','src/sociolit/static;sociolit/static','--add-data','config/public-journals.toml;sociolit/defaults',
   '--collect-all','webview','--collect-all','sentence_transformers','--collect-all','transformers',
   '--collect-all','tokenizers','--collect-all','torch','--collect-all','pypdfium2',
   '--hidden-import','uvicorn.logging','--hidden-import','uvicorn.loops.auto',

@@ -31,6 +31,22 @@
 
 ## 仍需后续工作
 
-向量数据库和重排器的速度评测、笔记组织、结构化论文比较、代码签名和自动升级。新增来源仍须逐刊核实权限和完整性。
+向量数据库和重排器的速度评测、笔记组织、结构化论文比较和代码签名。新增来源仍须逐刊核实权限和完整性。
 
 0.3 已增加 Windows 离线 OCR、保存检索、基础阅读笔记和可验证的公开 RSS 设置。OCR 阅读顺序、识别质量及检索相关性仍需独立评估；三刊直接自动来源仍待接入。
+
+## 0.4 再次检索与取舍
+
+2026-11-10 再次检查以下公开一手资料。它们提供产品思路，不构成本项目性能或质量的证明；未复制其他项目代码。并非穷尽整个互联网或照搬所有功能。
+
+| 一手来源 | 值得借鉴 | 本项目本轮落实 |
+| --- | --- | --- |
+| [Zotero：集合和标签](https://www.zotero.org/support/collections_and_tags) | 按项目与阅读状态组织、过滤条目 | 独立阅读清单与收藏筛选，不写回 Zotero |
+| [JabRef 官方仓库](https://github.com/JabRef/jabref) | 阅读管理、组织与导出 | 待读/在读/已读、归档恢复及本机笔记导出 |
+| [ZotSeek 官方仓库](https://github.com/introfini/ZotSeek) | 最近检索、混合检索、来源页定位 | 最近 20 次完整检索条件；保留已有 RRF 和页码定位 |
+| [Paperless-ngx 使用文档](https://github.com/paperless-ngx/paperless-ngx/blob/dev/docs/usage.md) | 标签、保存视图和持续阅读工作流 | 阅读清单按状态和收藏筛选，保留保存检索 |
+| [Paperlib 官方仓库](https://github.com/Future-Scholars/paperlib) | 组织文献和写作时导出的完整工作流 | 把检索、阅读清单、笔记与导出连成一条本地流程 |
+
+Windows 一键升级依据 [GitHub Releases](https://docs.github.com/en/rest/releases/releases)、[发布文件及 digest](https://docs.github.com/en/rest/releases/assets)、[Inno Setup 安装参数](https://jrsoftware.org/ishelp/topic_setupcmdline.htm)和 [pywebview 窗口接口](https://pywebview.flowrl.com/api/)。实现每日检查、版本说明、下载续传、大小/散列核对、退出交接、安装和重新打开原库，不依赖第三方更新服务器。
+
+下一步优先评估相似文献推荐、人工可审查的重复条目提示、多条件主题检索和 Zotero 批注导入。复杂问答、知识图谱、多端同步与自动合并资料需要另行质量和数据保护验证，未列为本版完成项。

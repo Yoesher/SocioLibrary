@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sociolit"
-version = "0.3.1"
+version = "0.4.0"
 description = "Local-first sociology literature library with Zotero and journal discovery"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -28,7 +28,7 @@ sociolit = "sociolit.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-sociolit = ["static/*", "ocr.ps1"]
+sociolit = ["static/*", "ocr.ps1", "update.ps1"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

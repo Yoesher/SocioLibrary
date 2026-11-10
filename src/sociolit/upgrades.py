@@ -116,7 +116,7 @@ def prepare_upgrade(directory, version):
                     source.backup(target, pages=256, progress=check_progress, sleep=0.05)
                     if target.execute("PRAGMA quick_check").fetchone()[0] != "ok":
                         raise UpgradeError("升级备份校验失败，原库未修改，请保留资料并联系维护者。")
-            for name in ("preferences.json", "desktop-version.json"):
+            for name in ("preferences.json", "desktop-version.json", "software-update.json"):
                 path = directory / name
                 if path.exists():
                     shutil.copy2(path, staging / name)

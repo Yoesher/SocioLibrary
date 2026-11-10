@@ -22,6 +22,7 @@ from .preferences import apply_preferences, save_preferences
 from .scope import active_scope
 from .semantic import LocalEmbedder, search_vectors
 from .service import build_configured_embeddings, sync_zotero
+from .software_updates import UpdateError, UpdateManager
 from .subscriptions import apply_feeds, configure_feed
 from .upgrades import upgrade_status
 
@@ -62,12 +63,23 @@ class OCRSettings(BaseModel):
     max_pages: int = Field(default=20, ge=1, le=100)
 
 
+class AutomaticUpdate(BaseModel):
+    enabled: bool
+
+
+class ReadingSetting(BaseModel):
+    item_id: str = Field(min_length=1, max_length=1000)
+    status: str = Field(default="to_read", max_length=20)
+    favorite: bool = False
+    archived: bool = False
+
+
 def chunk_digest(row):
     values = [row[k] for k in ("id", "item_id", "file_id", "page", "text")]
     return sha256(json.dumps(values, ensure_ascii=False).encode()).hexdigest()
 
 
-def create_app(store, config):
+def create_app(store, config, *, updater=None):
     research.initialize(store)
     initialize_ocr(store)
     apply_feeds(store, config)
@@ -78,6 +90,9 @@ def create_app(store, config):
     operation_lock = threading.Lock()
     jobs = Jobs()
     app.state.jobs = jobs
+    app.state.operation_lock = operation_lock
+    app.state.maintenance = threading.Event()
+    app.state.updater = updater or UpdateManager(store.directory, __import__("sociolit").__version__)
     static = Path(__file__).parent / "static"
     model_path = config.get("semantic", {}).get("model_path") or store.directory / "models" / "e5-small"
     embedder_cache = []
@@ -92,6 +107,9 @@ def create_app(store, config):
     @app.middleware("http")
     async def guard(request: Request, call_next):
         if request.method not in ("GET", "HEAD"):
+            if app.state.maintenance.is_set():
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"detail": "软件正在准备升级，请等待安装完成。"}, status_code=409)
             origin = request.headers.get("origin")
             if origin and urlparse(origin).netloc != request.headers.get("host"):
                 from fastapi.responses import JSONResponse
@@ -174,7 +192,61 @@ def create_app(store, config):
                 "journals": journals, "job": jobs.snapshot(), "version": __import__("sociolit").__version__,
                 "pdf_roots": [str(p) for p in allowed_roots(config)],
                 "collection_keywords": config.get("semantic", {}).get("collection_keywords", []),
-                "ocr_pages": store.state("ocr_summary", {}).get("pages", 0), "upgrade": upgrade_status(store.directory)}
+                "ocr_pages": store.state("ocr_summary", {}).get("pages", 0), "upgrade": upgrade_status(store.directory),
+                "software_update": app.state.updater.snapshot()}
+
+    @app.post("/api/software-update/check")
+    def check_update(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        try:
+            return app.state.updater.check()
+        except UpdateError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/software-update/download")
+    def download_update(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        try:
+            return app.state.updater.download()
+        except UpdateError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/software-update/automatic")
+    def automatic_update(body: AutomaticUpdate, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        try:
+            return app.state.updater.set_automatic(body.enabled)
+        except (UpdateError, OSError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @app.get("/api/research/recent")
+    def recent_queries(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        return research.recent_searches(store)
+
+    @app.post("/api/research/recent/clear")
+    def clear_recent_queries(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        with store.connect() as db:
+            db.execute("DELETE FROM recent_searches")
+        return {"saved": True}
+
+    @app.get("/api/research/reading")
+    def reading_records(status: str = "", favorite: bool = False, archived: bool = False,
+                        x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        if status not in ("", "to_read", "reading", "done"):
+            raise HTTPException(400, "阅读状态无效")
+        return research.reading_list(store, status, favorite, archived)
+
+    @app.post("/api/research/reading")
+    def mark_reading(body: ReadingSetting, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        try:
+            research.mark_reading(store, **body.model_dump())
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {"saved": True}
 
     @app.get("/api/research")
     def research_records(x_sociolit_token: str | None = Header(default=None)):
@@ -313,6 +385,9 @@ def create_app(store, config):
     @app.post("/api/search")
     def search(body: Query, x_sociolit_token: str | None = Header(default=None)):
         authorize(x_sociolit_token)
+        if body.mode not in ("fulltext", "semantic", "hybrid"):
+            raise HTTPException(400, "Unknown search mode")
+        research.remember_search(store, body.model_dump())
         try:
             selected = None
             if body.author or body.year:
@@ -360,7 +435,9 @@ def create_app(store, config):
                     row["journal"] = (meta.get("raw") or {}).get("journal", "") if isinstance(meta.get("raw"), dict) else ""
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(400, str(exc)) from exc
+        reading = research.reading_states(store, [row["item_id"] for row in rows])
         for row in rows:
+            row["reading"] = reading.get(row["item_id"], {})
             row["source_digest"] = chunk_digest(row)
             row.pop("source", None)
             row["pdf_url"] = "/api/pdf/" + quote(row["file_id"], safe="") + "#page=" + str(row["page"]) if row["file_id"] else None

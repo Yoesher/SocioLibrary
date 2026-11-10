@@ -29,9 +29,9 @@ function Run-Setup($exe, $arguments, $mustSucceed = $true) {
     if ($mustSucceed -and $process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
     return $process.ExitCode
 }
-gh release download v0.3.0 --repo $env:GITHUB_REPOSITORY --pattern 'SocioLibrary-0.3.0-Windows-x64-Setup.exe' --dir $root
+gh release download v0.3.1 --repo $env:GITHUB_REPOSITORY --pattern 'SocioLibrary-0.3.1-Windows-x64-Setup.exe' --dir $root
 if ($LASTEXITCODE -ne 0) { throw 'Cannot retrieve previous public installer' }
-$previous = Join-Path $root 'SocioLibrary-0.3.0-Windows-x64-Setup.exe'
+$previous = Join-Path $root 'SocioLibrary-0.3.1-Windows-x64-Setup.exe'
 $common = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-')
 Run-Setup $previous ($common + @("/DIR=`"$installDir`"")) | Out-Null
 $installedExe = Join-Path $installDir 'SocioLibrary.exe'
@@ -72,9 +72,20 @@ $smokeData = Join-Path $root 'inherited-fixture'
 $process = Start-Process -FilePath $installedExe -ArgumentList @('--smoke-test','--data-dir',"`"$smokeData`"") -PassThru -WindowStyle Hidden
 if (-not $process.WaitForExit(180000) -or $process.ExitCode -ne 0) { throw 'Installed upgrade smoke check failed' }
 $result = Get-Content (Join-Path $smokeData 'smoke-result.json') -Raw | ConvertFrom-Json
-if (-not $result.data_inherited -or -not $result.snapshot_verified -or $result.version -ne $version) {
+if (-not $result.data_inherited -or -not $result.snapshot_verified -or $result.version -ne $version -or $result.updater_mode -ne 'installed') {
     throw 'Installed application did not inherit the synthetic research library'
 }
+$handoffReport = Join-Path $root 'handoff-report.json'
+$handoffData = Join-Path $root 'updated-by-helper'
+python scripts/verify_update_handoff.py --installer $newSetup --target $installDir --data $handoffData --output $handoffReport
+if ($LASTEXITCODE -ne 0) { throw 'Updater parent could not hand off installation' }
+$resultPath = (Get-Content -LiteralPath $handoffReport -Raw | ConvertFrom-Json).result_file
+for ($attempt = 0; $attempt -lt 600 -and -not (Test-Path -LiteralPath $resultPath); $attempt++) { Start-Sleep -Seconds 1 }
+if (-not (Test-Path -LiteralPath $resultPath)) { throw 'Updater handoff verification timed out' }
+$handoffResult = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+if (-not $handoffResult.success) { $handoffResult | ConvertTo-Json; throw 'Updater installation handoff failed' }
+Assert-ResearchUnchanged
+'In-app updater verified: parent exit, verified installer, original program directory, relaunch, and inherited data.'
 Run-Setup (Join-Path $installDir 'unins000.exe') $common | Out-Null
 Assert-ResearchUnchanged
 'Upgrade verified: original install directory, running-app protection, data inheritance, backup, and uninstall retention.'

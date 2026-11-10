@@ -165,3 +165,13 @@ def test_an_unrecognized_database_is_not_given_soc_library_tables(tmp_path):
         initialize_desktop_library(tmp_path)
     assert (tmp_path / "library.sqlite3").read_bytes() == original
     assert not list((tmp_path / "backups").iterdir())
+
+
+def test_auto_update_choice_is_inherited_and_included_in_pre_upgrade_snapshot(tmp_path):
+    from sociolit.software_updates import UpdateManager
+    seed_upgrade_fixture(tmp_path)
+    UpdateManager(tmp_path, "0.3.1").set_automatic(False)
+    _, _, app = initialize_desktop_library(tmp_path)
+    assert not app.state.updater.snapshot()["auto_check"]
+    backup = next((tmp_path / "backups").iterdir())
+    assert not json.loads((backup / "software-update.json").read_text(encoding="utf-8"))["auto_check"]
