@@ -44,6 +44,10 @@ def initialize(store):
 def process_ocr(store, roots, language, *, max_pages=20, progress=None, recognizer=recognize_image):
     if not 1 <= max_pages <= 100:
         raise ValueError("每次 OCR 页数必须为 1–100。")
+    if not roots:
+        raise ValueError("请先设置 PDF 许可目录后再进行 OCR。")
+    if any(str(root).startswith(("\\\\", "//")) for root in roots):
+        raise ValueError("OCR 仅支持本机文件夹。")
     roots = [Path(root).resolve() for root in roots]
     progress = progress or (lambda *args: None)
     initialize(store)

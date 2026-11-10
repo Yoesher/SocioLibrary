@@ -103,6 +103,7 @@ def main():
             raise RuntimeError("本地服务启动超时。")
         url = f"http://127.0.0.1:{port}"
         if args.smoke_test:
+            assert Path(__file__).with_name("ocr.ps1").is_file(), "Windows OCR bridge missing from package"
             import webview  # noqa: F401
             from pypdf import PdfWriter
             from sentence_transformers import SentenceTransformer  # noqa: F401

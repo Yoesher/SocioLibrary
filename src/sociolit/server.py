@@ -47,6 +47,7 @@ class ReadingNote(BaseModel):
     title: str = Field(min_length=1, max_length=300)
     body: str = Field(min_length=1, max_length=20000)
     source_chunk_id: int | None = None
+    source_digest: str = Field(default="", max_length=64)
 
 
 class FeedSettings(BaseModel):
@@ -58,6 +59,11 @@ class FeedSettings(BaseModel):
 class OCRSettings(BaseModel):
     language: str = Field(default="zh-Hans-CN", max_length=30, pattern=r"^[a-zA-Z0-9-]+$")
     max_pages: int = Field(default=20, ge=1, le=100)
+
+
+def chunk_digest(row):
+    values = [row[k] for k in ("id", "item_id", "file_id", "page", "text")]
+    return sha256(json.dumps(values, ensure_ascii=False).encode()).hexdigest()
 
 
 def create_app(store, config):
@@ -129,7 +135,8 @@ def create_app(store, config):
         except Timeout:
             library_busy = True
         with store.connect() as db:
-            problems = [dict(r) for r in db.execute("""SELECT i.title,f.status,f.detail FROM files f
+            problems = [dict(r) for r in db.execute("""SELECT i.title,f.status,f.detail,
+                (SELECT count(*) FROM ocr_pages op WHERE op.file_id=f.id) AS ocr_pages FROM files f
                 JOIN items i ON i.id=f.item_id WHERE f.detail != '' LIMIT 10""")]
             problem_count = db.execute("SELECT COUNT(*) FROM files WHERE detail != ''").fetchone()[0]
         last_import = store.state("last_import")
@@ -195,6 +202,8 @@ def create_app(store, config):
                     WHERE c.id=?""", (body.source_chunk_id,)).fetchone()
                 if not row:
                     raise HTTPException(404, "来源片段已变化，请重新检索后保存。")
+                if not secrets.compare_digest(body.source_digest, chunk_digest(row)):
+                    raise HTTPException(409, "来源片段已变化，请重新检索，避免把笔记关联到错误原文。")
                 source = {k: row[k] for k in ("item_id", "file_id", "title", "page", "page_label", "kind", "text")}
                 source["chunk_id"] = row["id"]
         return {"id": research.save_note(store, body.title, body.body, source, body.id)}
@@ -351,6 +360,7 @@ def create_app(store, config):
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(400, str(exc)) from exc
         for row in rows:
+            row["source_digest"] = chunk_digest(row)
             row.pop("source", None)
             row["pdf_url"] = "/api/pdf/" + quote(row["file_id"], safe="") + "#page=" + str(row["page"]) if row["file_id"] else None
         return rows
@@ -378,12 +388,15 @@ def create_app(store, config):
     @app.get("/api/files/issues", response_class=HTMLResponse)
     def file_issues():
         with store.connect() as db:
-            rows = db.execute("""SELECT i.title,f.status,f.detail FROM files f
+            rows = db.execute("""SELECT i.title,f.status,f.detail,
+                (SELECT count(*) FROM ocr_pages op WHERE op.file_id=f.id) AS ocr_pages FROM files f
                 JOIN items i ON i.id=f.item_id WHERE f.detail != '' ORDER BY f.status,i.title""").fetchall()
         entries = []
         for row in rows:
             status, detail = row["status"], row["detail"]
-            if status == "missing":
+            if row["ocr_pages"]:
+                message = f"已检查 {row['ocr_pages']} 页 OCR；原 PDF 未修改，可继续处理剩余扫描页。识别文字需核对。"
+            elif status == "missing":
                 message = "附件未下载、已移动或不在许可目录。"
             elif status == "needs_ocr":
                 message = "没有检测到文字层，需要 OCR。"

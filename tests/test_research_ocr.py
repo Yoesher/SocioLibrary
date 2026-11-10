@@ -9,7 +9,7 @@ from pypdf import PdfWriter
 from sociolit.discovery import DiscoveryResult, run_discovery
 from sociolit.indexing import import_snapshot
 from sociolit.ocr import process_ocr
-from sociolit.server import create_app
+from sociolit.server import chunk_digest, create_app
 from sociolit.store import Store
 from sociolit.subscriptions import apply_feeds, configure_feed
 from sociolit.zotero import Attachment, Snapshot
@@ -66,7 +66,7 @@ def test_notes_survive_zotero_deletion_edits_and_archive_restore(tmp_path):
         assert client.get("/api/research").status_code == 403
         chunk = store.search("scanned")[0]
         response = client.post("/api/research/notes", headers=headers,
-            json={"title": "My note", "body": "<script>not HTML</script>", "source_chunk_id": chunk["id"]})
+            json={"title": "My note", "body": "<script>not HTML</script>", "source_chunk_id": chunk["id"], "source_digest": chunk_digest(chunk)})
         assert response.status_code == 200
         identity = response.json()["id"]
         import_snapshot(store, Snapshot("zotero:fixture", [], [], True))
@@ -118,3 +118,16 @@ def test_ocr_cjk_spacing_is_searchable(tmp_path):
     store, root, _, _ = fixture_library(tmp_path)
     process_ocr(store, [root], "zh-Hans-CN", recognizer=lambda *_: "家 庭 照 料 影 响 就 业")
     assert store.search("家庭照料")
+
+
+def test_note_rejects_reused_chunk_identifier(tmp_path):
+    store, root, _, _ = fixture_library(tmp_path)
+    with TestClient(create_app(store, {}), base_url="http://localhost") as client:
+        headers = {"X-Sociolit-Token": client.get("/api/status").json()["token"]}
+        chunk = store.search("scanned")[0]
+        digest = chunk_digest(chunk)
+        with store.connect() as db:
+            db.execute("UPDATE chunks SET text='Different source text' WHERE id=?", (chunk["id"],))
+        response = client.post("/api/research/notes", headers=headers,
+            json={"title":"Care", "body":"Reading", "source_chunk_id":chunk["id"], "source_digest":digest})
+        assert response.status_code == 409
