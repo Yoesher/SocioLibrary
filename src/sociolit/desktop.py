@@ -33,11 +33,11 @@ def message(text):
 class DesktopAPI:
     def choose_folder(self):
         import webview
-        result = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        result = self._window.create_file_dialog(webview.FOLDER_DIALOG)
         return result[0] if result else None
 
     def open_data_folder(self):
-        os.startfile(str(self.directory))
+        os.startfile(str(self._directory))
         return True
 
     def open_releases(self):
@@ -116,15 +116,15 @@ def main():
             return
         import webview
         bridge = DesktopAPI()
-        bridge.directory = directory
+        bridge._directory = directory
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
-        bridge.window = webview.create_window("SocioLibrary · 社会学文献知识库", url, js_api=bridge,
+        bridge._window = webview.create_window("SocioLibrary · 社会学文献知识库", url, js_api=bridge,
                                              width=1280, height=860, min_size=(960, 680),
                                              background_color="#f4f5f0", confirm_close=True)
         def start_updates():
             from .scheduler import discover_due
             app.state.jobs.start("discover", lambda _: discover_due(store, config))
-        bridge.window.events.loaded += start_updates
+        bridge._window.events.loaded += start_updates
         webview.start(gui="edgechromium", debug=False, private_mode=True)
     except Exception:
         logging.exception("Desktop startup failed")

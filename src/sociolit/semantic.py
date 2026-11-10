@@ -106,6 +106,7 @@ def build_vectors(store, embedder, batch_size=32, *, item_ids=None, progress=Non
 
 def search_vectors(store, embedder, query, limit=20, *, item_ids=None):
     vector = embedder.encode([query], query=True)[0]
+    query_norm_squared = sum(x*x for x in vector)
     with store.connect() as db:
         scope_join = _scope_table(db, item_ids)
         missing_query = "SELECT count(*) FROM chunks c " + scope_join + """ WHERE NOT EXISTS
@@ -122,7 +123,7 @@ def search_vectors(store, embedder, query, limit=20, *, item_ids=None):
             candidate = json.loads(result.pop("embedding"))
             if len(candidate) != len(vector):
                 raise RuntimeError("Embedding dimension changed; rebuild index")
-            denominator = math.sqrt(sum(x*x for x in vector) * sum(x*x for x in candidate))
+            denominator = math.sqrt(query_norm_squared * sum(x*x for x in candidate))
             result["score"] = sum(a*b for a, b in zip(vector, candidate, strict=True)) / denominator if denominator else 0.0
             entry = (result["score"], result["id"], result)
             if len(heap) < max(1, limit):

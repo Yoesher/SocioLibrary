@@ -206,13 +206,11 @@ def create_app(store, config):
             selected = None
             if body.author or body.year:
                 with store.connect() as db:
-                    records = db.execute("SELECT id,metadata FROM items").fetchall()
-                selected = []
-                for record in records:
-                    meta = json.loads(record["metadata"])
-                    authors = " ".join(str(a) for a in meta.get("authors", []))
-                    if body.author.casefold() in authors.casefold() and (not body.year or str(meta.get("year", "")) == body.year):
-                        selected.append(record["id"])
+                    records = db.execute("""SELECT id FROM items
+                        WHERE instr(lower(COALESCE(json_extract(metadata,'$.authors'),'')),lower(?)) > 0
+                        AND (? = '' OR CAST(json_extract(metadata,'$.year') AS TEXT) = ?)""",
+                        (body.author, body.year, body.year)).fetchall()
+                selected = [record["id"] for record in records]
                 if not selected:
                     return []
             if body.mode in ("semantic", "hybrid"):

@@ -86,3 +86,11 @@ def test_background_errors_are_visible_and_unknown_tasks_fail(tmp_path, monkeypa
             time.sleep(.01)
         assert state["state"] == "error"
         assert "Synthetic failure" in state["error"]
+
+
+def test_native_bridge_exposes_only_methods_not_window_object_graph(tmp_path):
+    from sociolit.desktop import DesktopAPI
+    bridge = DesktopAPI()
+    bridge._window = object()
+    bridge._directory = tmp_path
+    assert all(callable(getattr(bridge, name)) for name in dir(bridge) if not name.startswith("_"))

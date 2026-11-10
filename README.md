@@ -1,8 +1,16 @@
 # SocioLibrary · 本地优先的社会学文献知识库
 
-项目包名与命令为 `sociolit`。这是可运行的 **0.1.1 MVP**：Zotero 本地导入、按页全文检索、可选本地语义检索，以及可配置的期刊元数据发现。代码可开源；个人文献、PDF、笔记、全文索引和密钥保存在本机。
+项目包名与命令为 `sociolit`。这是可运行的 **0.2.0 Windows 桌面版**：Zotero 本地导入、按页全文检索、可选本地语义检索，以及可配置的期刊元数据发现。代码可开源；个人文献、PDF、笔记、全文索引和密钥保存在本机。
 
 **当前重要状态：**《社会》《人口研究》已接入官网的当期和过刊目录，只获取题名、作者、刊出日期与来源链接。适配器每次核验站点 robots.txt，遇到目录异常停止并提示；它不覆盖未收录在期刊目录中的网络首发论文。《社会学研究》《中国人口科学》已接入官网当期目录快照，仅获取题名、作者、年份和来源链接；未提供准确发表日，长期未运行可能漏掉中间期次。《社会学评论》《人口学刊》《中国社会科学》仍显示“来源待接入”。详见[逐刊核验](docs/discovery-research.md)。
+
+## Windows 软件下载
+
+本轮以 **Windows 10 / 11 x64 桌面软件** 为唯一发布目标。
+
+打开 [软件下载页](https://github.com/Yoesher/SocioLibrary/releases)，选择 `Windows-x64-Setup.exe` 安装版，或完整解压 `Windows-x64-Portable.zip` 免安装版。软件包含运行环境，不需要安装 Python。语义模型首次单独下载。部分机器需先安装微软 WebView2 Runtime。
+
+首次启动后，在“资料与设置”中选择 PDF 文件夹并测试 Zotero 连接，即可同步。支持后台任务进度、作者与年份筛选、全文/语义/混合检索、出处片段复制。详见 [Windows 使用说明](docs/windows.md) 与 [同类项目调研](docs/similar-projects.md)。下方命令行说明主要供开发者使用。
 
 ## 获取项目
 
@@ -34,7 +42,7 @@ Copy-Item config/local.example.toml config.local.toml
 .\.venv\Scripts\python.exe -m sociolit serve --config config.local.toml --open-browser
 ```
 
-Linux/macOS 使用 `python3 -m venv .venv`，后续将 Python 路径换为 `.venv/bin/python`。本地服务地址为 `http://127.0.0.1:8765`，仅监听本机。
+当前只维护 Windows 发布包。本地服务地址为 `http://127.0.0.1:8765`，仅监听本机。
 
 ## 本版已经实现
 
@@ -129,7 +137,7 @@ python -m pytest -q
 python -m ruff check src tests
 ```
 
-测试使用合成 PDF 和模拟来源，不访问个人文献、不要求密钥、不依赖外部网络。覆盖安全导入、PDF 变化、原文页码、跨库隔离、笔记标记、语义索引失效、分页去重、恶意 XML、来源失败与调度水位。实际运行环境及结果见[验证记录](docs/validation.md)。CI 已配置 Windows/Linux、Python 3.11/3.13，尚未在远端运行。
+测试使用合成 PDF 和模拟来源，不访问个人文献、不要求密钥、不依赖外部网络。覆盖安全导入、PDF 变化、原文页码、跨库隔离、笔记标记、语义索引失效、分页去重、恶意 XML、来源失败与调度水位。实际运行环境及结果见[验证记录](docs/validation.md)。CI 当前只维护 Windows、Python 3.11/3.13，构建情况见 GitHub Actions。
 
 项目采用 MIT 开源许可。参与开发时只提交经审查的代码、文档、公开配置和合成测试。`.gitignore` 屏蔽常见 PDF、数据库、模型和密钥文件，但不能保证识别任意命名的私人资料。先检查待提交文件，再创建远端仓库。代码采用 MIT 许可，论文与第三方模型的许可独立适用。详见 [SECURITY.md](SECURITY.md) 和[架构说明](docs/architecture.md)。
 

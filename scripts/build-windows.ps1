@@ -2,7 +2,9 @@ $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath (Split-Path -Parent $PSScriptRoot)
 $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
 if ($LASTEXITCODE -ne 0) { throw 'Cannot read application version' }
-$arguments = @('-m','PyInstaller','--noconfirm','--clean','--windowed','--onedir','--name','SocioLibrary',
+& python scripts/create_icon.py
+if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed' }
+$arguments = @('-m','PyInstaller','--noconfirm','--clean','--windowed','--onedir','--name','SocioLibrary','--icon','build/desktop.ico',
   '--paths','src','--add-data','src/sociolit/static;sociolit/static','--add-data','config/public-journals.toml;sociolit/defaults',
   '--collect-all','webview','--collect-all','sentence_transformers','--collect-all','transformers',
   '--collect-all','tokenizers','--collect-all','torch','--collect-all','pypdfium2',
