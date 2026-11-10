@@ -120,6 +120,10 @@
     try { updateContext = await bridge.update_context(); }
     catch (_) { updateContext = {supported: false, mode: 'source', message: '当前桌面组件无法启动一键安装，请重新打开软件。'}; }
     el('export-notes').hidden = false;
+    el('software-open-cache').hidden = false;
+    el('software-open-cache').onclick = async () => {
+      try { await bridge.open_update_folder(); } catch (error) { notice('无法打开更新记录：' + error.message, true); }
+    };
     el('export-notes').onclick = async () => {
       exporting = true;
       try {
@@ -140,9 +144,12 @@
       return;
     }
     installing = true; el('software-upgrade').disabled = true;
-    el('software-status').textContent = '正在关闭当前程序并安装，完成后会自动打开原资料库…';
+    const editable = [...document.querySelectorAll('main button, input, select, textarea')].filter(node => !node.disabled);
+    editable.forEach(node => {node.disabled = true;});
+    el('software-status').textContent = '正在准备安装，将关闭软件并自动重新打开原资料库…';
     try { await window.pywebview.api.install_update(); }
-    catch (error) { installing = false; installIntent = false; notice('尚未开始安装：' + error.message, true); }
+    catch (error) { installing = false; installIntent = false; editable.forEach(node => {node.disabled = false;});
+      notice('尚未开始安装：' + error.message, true); }
   }
   async function beginUpgrade() {
     showView('software-view');
@@ -169,6 +176,10 @@
     catch (error) { notice(error.message, true); }
   };
   el('release-page').onclick = () => showView('software-view');
+  window.isSoftwareInstalling = () => installing;
+  document.addEventListener('click', event => {
+    if (installing) { event.preventDefault(); event.stopImmediatePropagation(); }
+  }, true);
 
   window.renderSoftwareUpdate = status => {
     libraryStatus = status; updateState = status.software_update;
@@ -181,6 +192,7 @@
       downloading: '正在下载 ' + s.available_version + '，可以继续检索或选择稍后安装。',
       ready: '更新包已完成下载和文件核对，可以安装。', error: s.error};
     el('software-status').textContent = labels[s.state] || s.state;
+    el('software-last-result').textContent = s.last_install || '';
     el('software-auto').checked = s.auto_check;
     el('software-check').disabled = busy;
     el('software-upgrade').disabled = busy || !available;

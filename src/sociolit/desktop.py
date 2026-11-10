@@ -91,10 +91,13 @@ class DesktopAPI:
             self._native_lock.release()
             raise UpdateError("当前资料操作尚未完成，请稍后升级。")
         self._app.state.maintenance.set()
+        handoff = None
         try:
             with FileLock(str(self._directory / "library.lock"), timeout=0):
                 release, installer = self._app.state.updater.ready_installer()
-                self._helper = launch_install_helper(installer, release, self._directory, context["target"])
+                handoff = launch_install_helper(installer, release, self._directory, context["target"])
+                self._helper = handoff
+                self._app.state.updater.register_handoff(release.version, handoff["result_file"])
             self._window.confirm_close = False
             self._window.destroy()
             return {"installing": True}
@@ -103,6 +106,19 @@ class DesktopAPI:
             raise UpdateError("资料库正在被其他任务使用，请等待任务完成后升级。") from exc
         except Exception:
             self._app.state.maintenance.clear()
+            self._window.confirm_close = True
+            if handoff:
+                from .upgrades import _write
+                try:
+                    _write(handoff["result_file"], {"version": release.version, "success": False, "cancelled": True,
+                        "error": "Application did not close for installation"})
+                except OSError:
+                    logging.exception("Could not persist update cancellation")
+                try:
+                    if handoff["process"].poll() is None:
+                        handoff["process"].terminate()
+                except OSError:
+                    logging.exception("Could not stop waiting update helper")
             raise
         finally:
             self._app.state.operation_lock.release()
@@ -145,6 +161,12 @@ class DesktopAPI:
     def open_releases(self):
         import webbrowser
         webbrowser.open("https://github.com/Yoesher/SocioLibrary/releases")
+
+    def open_update_folder(self):
+        directory = self._app.state.updater.cache_directory()
+        directory.mkdir(parents=True, exist_ok=True)
+        os.startfile(str(directory))
+        return True
 
 
 def main():

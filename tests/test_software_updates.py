@@ -346,3 +346,109 @@ def test_desktop_install_refuses_to_close_during_a_background_library_job(tmp_pa
         assert not app.state.maintenance.is_set()
     finally:
         finish.set()
+
+
+def test_installation_result_is_visible_after_restart_without_accepting_external_paths(tmp_path):
+    import json
+
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    result = cache / ("handoff-" + "0" * 32 + ".result.json")
+    manager = UpdateManager(tmp_path, "0.4.0", cache=cache)
+    with pytest.raises(UpdateError, match="缓存"):
+        manager.register_handoff("0.4.1", tmp_path / result.name)
+    manager.register_handoff("0.4.1", result)
+    result.write_text(json.dumps({"version": "0.4.1", "success": False}), encoding="utf-8")
+    assert "未完成" in manager.snapshot()["last_install"]
+    result.write_text(json.dumps({"version": "0.4.1", "success": True}), encoding="utf-8")
+    assert "仍是旧版" in manager.snapshot()["last_install"]
+    assert "已升级到" in UpdateManager(tmp_path, "0.4.1", cache=cache).snapshot()["last_install"]
+    result.write_text("[]", encoding="utf-8")
+    assert "无法读取" in manager.snapshot()["last_install"]
+
+
+def test_failed_window_close_cancels_handoff_and_restores_library_writes(tmp_path, monkeypatch):
+    import json
+    import threading
+    from types import SimpleNamespace
+
+    from sociolit.desktop import DesktopAPI
+
+    updater = UpdateManager(tmp_path, "0.4.0", cache=tmp_path / "cache")
+    cache = updater.cache_directory()
+    cache.mkdir()
+    result = cache / ("handoff-" + "1" * 32 + ".result.json")
+
+    class Process:
+        stopped = False
+
+        def poll(self):
+            return 1 if self.stopped else None
+
+        def terminate(self):
+            self.stopped = True
+
+    process = Process()
+
+    def fail_close():
+        raise RuntimeError("Synthetic window close failed")
+
+    updater.ready_installer = lambda: (SimpleNamespace(version="0.4.1"), tmp_path / "synthetic.exe")
+    monkeypatch.setattr(
+        "sociolit.update_install.native_install_context",
+        lambda: {"supported": True, "target": str(tmp_path / "program")},
+    )
+    monkeypatch.setattr(
+        "sociolit.update_install.launch_install_helper",
+        lambda *_: {"process": process, "result_file": result},
+    )
+    bridge = DesktopAPI()
+    bridge._app = create_app(Store(tmp_path), {}, updater=updater)
+    bridge._directory = tmp_path
+    bridge._native_lock = threading.Lock()
+    bridge._window = SimpleNamespace(confirm_close=True, destroy=fail_close)
+    with pytest.raises(RuntimeError, match="window close"):
+        bridge.install_update()
+    assert process.stopped and not bridge._app.state.maintenance.is_set()
+    assert bridge._window.confirm_close
+    assert json.loads(result.read_text(encoding="utf-8"))["cancelled"]
+    assert bridge._native_lock.acquire(blocking=False)
+    bridge._native_lock.release()
+
+
+def test_windows_helper_acknowledges_readiness_without_running_an_installer(tmp_path, monkeypatch):
+    import subprocess
+    import sys
+
+    from sociolit.update_install import launch_install_helper
+
+    if sys.platform != "win32":
+        pytest.skip("Windows helper")
+    path = tmp_path / NAME
+    path.write_bytes(DATA)
+    children = []
+    original = subprocess.Popen
+
+    def tracked(*args, **kwargs):
+        process = original(*args, **kwargs)
+        children.append(process)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", tracked)
+    try:
+        result = launch_install_helper(
+            path,
+            parse_release(metadata(), "0.4.0"),
+            tmp_path / "data",
+            tmp_path / "program",
+            cache=tmp_path / "cache",
+        )
+        assert result["process"].poll() is None
+        assert list((tmp_path / "cache").glob("*.ready.json"))
+        assert not result["result_file"].exists()
+    finally:
+        # Keep the parent alive until every helper is terminated: synthetic input is never executed.
+        for process in children:
+            if process.poll() is None:
+                process.terminate()
+            process.wait(10)

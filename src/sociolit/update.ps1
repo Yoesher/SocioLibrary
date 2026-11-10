@@ -1,7 +1,9 @@
 $ErrorActionPreference = 'Stop'
 [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 $request = [Console]::In.ReadToEnd() | ConvertFrom-Json
 $result = @{success=$false; version=$request.version; installer_exit_code=$null}
+$handedOff = $false
 function Write-JsonAtomic($path, $value) {
     $value | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath ($path + '.tmp') -Encoding UTF8
     Move-Item -LiteralPath ($path + '.tmp') -Destination $path -Force
@@ -21,8 +23,13 @@ try {
     # Acquire a handle before acknowledging readiness; later PID reuse cannot target another process.
     $parentProcess = Get-Process -Id $request.parent_pid -ErrorAction Stop
     $null = $parentProcess.Handle
+    $handedOff = $true
     Write-JsonAtomic $request.ready_file @{request_id=$request.request_id}
     if (-not $parentProcess.WaitForExit(300000)) { throw 'The application did not finish closing; no installation was attempted' }
+    if (Test-Path -LiteralPath $request.result_file) {
+        $previousResult = Get-Content -LiteralPath $request.result_file -Raw | ConvertFrom-Json
+        if ($previousResult.cancelled -eq $true) { exit 0 }
+    }
     if ((Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant() -ne $request.sha256) {
         throw 'Installer changed after handoff'
     }
@@ -48,9 +55,15 @@ try {
 } catch {
     $result.error = $_.Exception.Message
     Write-Result
-    if (-not $request.test_mode) {
+    if (-not $request.test_mode -and $handedOff -and $parentProcess.HasExited) {
+        try {
+            if ((Test-Path -LiteralPath $request.fallback_exe -PathType Leaf) -and
+                [System.IO.Path]::GetFileName($request.fallback_exe) -eq 'SocioLibrary.exe') {
+                Start-Process -FilePath $request.fallback_exe -ArgumentList @('--data-dir', ('"' + $request.data_dir + '"')) -WindowStyle Normal | Out-Null
+            }
+        } catch { }
         Add-Type -AssemblyName System.Windows.Forms
-        [System.Windows.Forms.MessageBox]::Show('更新未完成。原资料库仍在原目录，请重新打开软件并查看更新记录。', 'SocioLibrary') | Out-Null
+        [System.Windows.Forms.MessageBox]::Show('更新未完成，已尝试重新打开原软件。资料库仍在原目录，可在“软件更新”中查看记录并重试。', 'SocioLibrary') | Out-Null
     }
     exit 1
 }

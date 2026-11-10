@@ -53,13 +53,17 @@ def launch_install_helper(installer, release, data_directory, target_directory, 
                "ready_file": str(ready), "result_file": str(result), "test_mode": test_mode}
     script = Path(__file__).with_name("update.ps1").read_text(encoding="utf-8")
     powershell = Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32/WindowsPowerShell/v1.0/powershell.exe"
-    process = subprocess.Popen([str(powershell), "-NoProfile", "-NonInteractive", "-Command", script],
-                               stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                               text=True, encoding="utf-8", creationflags=subprocess.CREATE_NO_WINDOW)
+    environment = {key: value for key, value in os.environ.items() if key.casefold() != "psmodulepath"}
+    # A PowerShell 7 parent can otherwise shadow the Windows PowerShell 5.1 system modules.
+    environment["PSModulePath"] = str(powershell.parent / "Modules")
+    with (folder / ("handoff-" + nonce + ".helper.log")).open("wb") as diagnostic:
+        process = subprocess.Popen([str(powershell), "-NoProfile", "-NonInteractive", "-Command", script],
+                                   stdin=subprocess.PIPE, stdout=diagnostic, stderr=subprocess.STDOUT,
+                                   text=True, encoding="utf-8", creationflags=subprocess.CREATE_NO_WINDOW, env=environment)
     try:
         process.stdin.write(json.dumps(request, ensure_ascii=False))
         process.stdin.close()
-        for _ in range(200):
+        for _ in range(600):
             if ready.is_file():
                 response = json.loads(ready.read_text(encoding="utf-8-sig"))
                 if response.get("request_id") != nonce:

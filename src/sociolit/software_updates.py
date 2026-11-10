@@ -231,6 +231,7 @@ class UpdateManager:
         self._state, self._error, self._release, self._ready = "idle", "", None, None
         self._downloaded, self._total = 0, 0
         self._thread = None
+        self._last_install = None
         if self._path.is_file():
             try:
                 saved = json.loads(self._path.read_text(encoding="utf-8"))
@@ -241,6 +242,8 @@ class UpdateManager:
                     if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
                         raise ValueError("Invalid check timestamp")
                 self._settings.update({key: saved[key] for key in self._settings if key in saved})
+                if isinstance(saved.get("last_install"), dict):
+                    self._last_install = saved["last_install"]
                 if saved.get("release"):
                     data = saved["release"]
                     self._release = parse_release({"tag_name": "v" + data["version"], "draft": False, "prerelease": False,
@@ -257,10 +260,49 @@ class UpdateManager:
             return {"state": self._state, "error": self._error, "auto_check": self._settings["auto_check"],
                     "current_version": self._version, "available_version": self._release.version if self._release else "",
                     "notes": self._release.notes if self._release else "", "last_checked": self._settings["last_checked"],
-                    "downloaded": self._downloaded, "total": self._total}
+                    "downloaded": self._downloaded, "total": self._total, "last_install": self._installation_message()}
 
     def _persist(self):
-        _write(self._path, dict(self._settings, release=asdict(self._release) if self._release else None))
+        _write(self._path, dict(self._settings, release=asdict(self._release) if self._release else None,
+                               last_install=self._last_install))
+
+    def cache_directory(self):
+        return self._cache
+
+    def register_handoff(self, version, result_file):
+        version_tuple(version)
+        result_file = Path(result_file).resolve()
+        if (not result_file.is_relative_to(self._cache.resolve())
+                or not re.fullmatch(r"handoff-[a-f0-9]{32}\.result\.json", result_file.name)):
+            raise UpdateError("安装记录路径不属于更新缓存，已停止交接。")
+        with self._lock:
+            self._last_install = {"version": version, "result_file": str(result_file)}
+            self._persist()
+
+    def _installation_message(self):
+        if not self._last_install:
+            return ""
+        try:
+            version = self._last_install["version"]
+            version_tuple(version)
+            path = Path(self._last_install["result_file"]).resolve()
+            if not path.is_relative_to(self._cache.resolve()) or not re.fullmatch(r"handoff-[a-f0-9]{32}\.result\.json", path.name):
+                return "上次安装记录已不可用，可重新检查更新。"
+            if not path.is_file():
+                return "已建立 " + version + " 的安装交接，尚未取得结果。"
+            if path.stat().st_size > 16384:
+                raise ValueError("Oversized result")
+            result = json.loads(path.read_text(encoding="utf-8-sig"))
+            if not isinstance(result, dict):
+                raise ValueError("Invalid result")
+            if result.get("version") != version:
+                raise ValueError("Wrong result version")
+            if result.get("success") is True:
+                return ("上次已升级到 " + version + "。" if version_tuple(self._version) >= version_tuple(version)
+                        else "上次安装已完成，但当前仍是旧版，请从已安装版快捷方式打开。")
+            return "上次升级未完成，原资料仍保留，可以重试；详细原因见更新记录。"
+        except (OSError, ValueError, TypeError, KeyError, UpdateError):
+            return "上次安装记录无法读取，原资料仍可使用。"
 
     def set_automatic(self, enabled):
         if type(enabled) is not bool:

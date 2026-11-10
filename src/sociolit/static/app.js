@@ -8,7 +8,7 @@ async function api(path,body={}){const response=await fetch(path,{method:'POST',
 const taskNames={import:'同步 Zotero',embed:'构建语义索引',discover:'检查期刊更新',model:'下载本地模型',ocr:'扫描页文字识别'};
 const phases={starting:'正在准备',metadata:'读取书目',attachment_paths:'核对附件',metadata_index:'更新书目索引',pdf_index:'提取 PDF 文字',embedding:'生成语义向量',ocr:'识别扫描页'};
 function fileNotice(f){if(f.ocr_pages)return f.title+'：已检查 '+f.ocr_pages+' 页OCR，识别文字需要核对。';return f.title+'：'+({needs_ocr:'没有文字层，需要 OCR。',missing:'附件未下载、已移动或不在许可目录。',error:'PDF 未能提取，请检查文件。'}[f.status]||'部分页面没有文字层，请核对原文。');}
-async function refresh(){const response=await fetch('/api/status');if(!response.ok)throw new Error('连接本地资料库失败');const s=await response.json();token=s.token;semanticScope=s.semantic_scope||'';el('version').textContent='Windows · '+s.version;if(window.renderSoftwareUpdate)window.renderSoftwareUpdate(s);
+async function refresh(){if(window.isSoftwareInstalling&&window.isSoftwareInstalling())return;const response=await fetch('/api/status');if(!response.ok)throw new Error('连接本地资料库失败');const s=await response.json();token=s.token;semanticScope=s.semantic_scope||'';el('version').textContent='Windows · '+s.version;if(window.renderSoftwareUpdate)window.renderSoftwareUpdate(s);
  const busy=s.library_busy||s.job.state==='running';for(const id of ['import','embed','discover','model','ocr'])el(id).disabled=busy;
  el('ocr').disabled=busy||!s.pdf_roots_configured;el('model').disabled=busy||s.semantic_model_ready;el('embed').disabled=busy||!s.semantic_model_ready;
  el('model-status').textContent=s.semantic_model_ready?'模型已就绪':'尚未下载';

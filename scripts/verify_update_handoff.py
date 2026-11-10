@@ -29,8 +29,15 @@ def main():
     release = Release(__version__, f"https://github.com/Yoesher/SocioLibrary/releases/download/v{__version__}/{installer.name}",
                       digest, installer.stat().st_size, "Synthetic local build verification")
     kernel, mutex = installer_mutex()
-    result = launch_install_helper(installer, release, args.data, args.target,
-                                   cache=Path(args.output).parent / "handoff-cache", test_mode=True)
+    cache = Path(args.output).parent / "handoff-cache"
+    try:
+        result = launch_install_helper(installer, release, args.data, args.target, cache=cache, test_mode=True)
+    except Exception:
+        for path in cache.glob("*.result.json"):
+            print(path.read_text(encoding="utf-8-sig", errors="replace")[-4000:])
+        for path in cache.glob("*.helper.log"):
+            print(path.read_text(encoding="utf-8-sig", errors="replace")[-4000:])
+        raise
     Path(args.output).write_text(json.dumps({"result_file": str(result["result_file"])}), encoding="utf-8")
     # The process must exit with its mutex still alive; the helper is responsible for waiting.
     assert kernel and mutex
