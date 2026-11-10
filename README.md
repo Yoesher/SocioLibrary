@@ -56,6 +56,9 @@ Copy-Item config/local.example.toml config.local.toml
 | 期刊发现 | Crossref/OpenAlex/RSS 元数据及已核验的单刊官方目录；分页、有限重试、DOI 去重、保守无 DOI 去重、元数据更正、失败来源状态 |
 | 月度更新 | 本地按来源保存成功日期；每日或启动时检查，当月成功则跳过，关机后可补查；生成新增/更新摘要并在页面提示 |
 | GitHub Actions | 可选月度公共元数据报告；默认门控关闭，运行无仓库写权限；不会访问或上传本地库 |
+| Windows OCR | 使用本机 Windows 文字识别组件，分批处理无文字层页面；保留实际页序，不改写原 PDF |
+| 保存检索 | 保存关键词、检索方式及作者/年份条件，可在当前资料库重新执行 |
+| 阅读笔记 | 新增、编辑、归档和恢复；来源摘录以快照保留，独立于 Zotero 条目删除 |
 
 导入中的“清理”仅影响 SocioLit 的派生索引，绝不删除或更改 Zotero 原文件。书目以事务提交，PDF 按文件逐个提交，大型导入中断后可再次点击导入继续；完成前页面会提示部分 PDF 索引可能尚未刷新。切换旧版 Zotero 库时，需要更改 `zotero.library_name`；Zotero 10 的服务器实例标识可辅助区分资料库。JSON 导出与 Local API 被视为不同来源，跨导入方式不会自动合并私人文献。详见[Zotero 方案核实](docs/zotero-research.md)。
 
