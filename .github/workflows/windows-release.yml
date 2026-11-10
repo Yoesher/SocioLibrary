@@ -1,0 +1,44 @@
+name: Build Windows desktop
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Install CPU runtime and desktop dependencies
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e ".[desktop,semantic,dev]"
+      - name: Validate source
+        run: |
+          python -m pytest -q
+          python -m ruff check src tests scripts/check_public_files.py scripts/collect_licenses.py
+          python scripts/check_public_files.py
+      - name: Build installer and portable application
+        shell: pwsh
+        run: ./scripts/build-windows.ps1
+      - name: Exercise frozen application in an isolated folder
+        shell: pwsh
+        run: |
+          $data = Join-Path $env:RUNNER_TEMP 'sociolit-frozen-smoke'
+          $process = Start-Process -FilePath ./dist/SocioLibrary/SocioLibrary.exe -ArgumentList @('--smoke-test','--data-dir',$data) -PassThru -WindowStyle Hidden
+          if (-not $process.WaitForExit(180000)) { throw 'Frozen smoke test timed out' }
+          if ($process.ExitCode -ne 0 -or -not (Test-Path "$data/smoke-result.json")) {
+            if (Test-Path "$data/logs/desktop.log") { Get-Content "$data/logs/desktop.log" -Tail 60 }
+            throw 'Frozen smoke test failed'
+          }
+          Get-Content "$data/smoke-result.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: SocioLibrary-Windows-x64
+          path: release-dist/*
+          retention-days: 30

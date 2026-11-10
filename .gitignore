@@ -55,3 +55,8 @@ logs/
 *.bib
 zotero*.json
 library*.json
+
+# Windows build outputs
+release-dist/
+build-redist/
+*.spec

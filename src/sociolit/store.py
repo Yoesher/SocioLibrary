@@ -80,15 +80,19 @@ class Store:
             return {name: db.execute(f"SELECT count(*) FROM {name}").fetchone()[0]
                     for name in ("items", "files", "chunks", "vectors")}
 
-    def search(self, query: str, limit: int = 20):
+    def search(self, query: str, limit: int = 20, *, item_ids=None):
         tokens = list(dict.fromkeys(terms(query)))[:64]
         if not tokens:
             return []
         expression = " AND ".join('"' + t + '"' for t in tokens)
         with self.connect() as db:
+            scope = ""
+            if item_ids is not None:
+                db.execute("CREATE TEMP TABLE search_items(id TEXT PRIMARY KEY)")
+                db.executemany("INSERT INTO search_items VALUES(?)", [(item,) for item in item_ids])
+                scope = " AND c.item_id IN (SELECT id FROM search_items) "
             rows = db.execute("""
               SELECT c.*,i.title,i.item_key,i.source,bm25(chunks_fts) AS score
               FROM chunks_fts JOIN chunks c ON c.id=chunks_fts.rowid JOIN items i ON i.id=c.item_id
-              WHERE chunks_fts MATCH ? ORDER BY score LIMIT ?
-            """, (expression, min(max(limit, 1), 100))).fetchall()
+              WHERE chunks_fts MATCH ? """ + scope + " ORDER BY score LIMIT ?", (expression, min(max(limit, 1), 100))).fetchall()
         return [dict(row) for row in rows]

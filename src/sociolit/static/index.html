@@ -1,13 +1,17 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SocioLibrary · 社会学文献知识库</title><link rel="stylesheet" href="/static/style.css"></head>
-<body><main><header><div class="eyebrow">SOCIOLIBRARY / 本地研究资料库</div><h1>让阅读留下可追溯的积累。</h1>
-<p>检索你的文献、核对原文页码，持续留意期刊的新研究。</p><span class="badge">资料保存在本机</span></header>
-<section class="toolbar"><button id="import">一键导入 Zotero</button><button id="embed" class="secondary">构建语义索引</button><button id="discover" class="secondary">检查期刊更新</button></section>
-<p id="notice" role="status">正在连接本地资料库…</p><div id="stats" class="stats"></div>
-<section class="searchbox"><h2>从一个研究问题开始</h2><form id="search"><input id="query" maxlength="500" required placeholder="例如：家庭再生产、就业退出、平台劳动"><select id="mode"><option value="fulltext">全文检索</option><option value="semantic">语义检索</option></select><button>检索</button></form>
-<p class="hint" id="scope-hint">全文检索支持中英文。语义检索需先安装本地模型并构建索引；结果相似度不代表引文证据强度。</p></section>
-<div id="results" aria-live="polite"></div><section class="bottom"><h2>期刊订阅</h2><div id="journals"></div><p id="updates"></p><p><a href="/api/discovery/report" target="_blank" rel="noopener">查看最近一次更新报告 ↗</a></p>
-<h2>导入与页面提示</h2><ul id="warnings"></ul><p><a href="/api/files/issues" target="_blank" rel="noopener">查看全部附件提示 ↗</a></p></section>
-<footer>PDF 页序与文章印刷页码可能不同。扫描页需要 OCR。个人笔记始终单独标注。</footer></main>
-<script src="/static/app.js"></script></body></html>
+<body><aside class="sidebar"><a class="brand" href="/">S<span>SocioLibrary</span></a><p class="caption">你的社会学研究资料库</p>
+<nav aria-label="主导航"><button class="nav active" data-view="search-view">文献检索</button><button class="nav" data-view="journal-view">期刊动态</button><button class="nav" data-view="settings-view">资料与设置</button></nav>
+<div class="sidebar-foot"><span class="dot"></span> 资料保存在本机<p id="version"></p></div></aside>
+<main><header><div><span class="eyebrow">研究工作台</span><h1>从文献出发，回到原文。</h1><p class="subtle">检索阅读积累，让每个片段都能追溯。</p></div><button id="import">同步 Zotero</button></header>
+<p id="notice" role="status">正在连接本地资料库…</p>
+<section id="task-panel" class="task" hidden><div class="row"><strong id="task-name">后台任务</strong><span id="task-phase"></span></div><progress id="task-progress"></progress><p id="task-detail" class="subtle"></p></section>
+<div id="stats" class="stats"></div>
+<section id="setup-card" class="card onboarding" hidden><h2>先连接你的阅读积累</h2><p>打开 Zotero，允许本机应用通信，再选择存放 PDF 的文件夹。配置只需一次。</p><button id="setup-open">开始配置</button><span class="subtle">也可以仅导入书目信息</span></section>
+<section id="search-view" class="view"><section class="card searchbox"><h2>检索文献与原文片段</h2><form id="search"><div class="search-row"><input id="query" maxlength="500" required aria-label="检索内容" placeholder="输入关键词或研究问题，如：生育与女性就业"><select id="mode" aria-label="检索方式"><option value="fulltext">全文检索</option><option value="semantic">语义检索</option><option value="hybrid">混合检索</option></select><button id="search-button">检索</button></div><div class="filters"><input id="author" maxlength="100" placeholder="作者（可选）" aria-label="作者"><input id="year" maxlength="4" pattern="[0-9]{4}|" placeholder="年份（可选）" aria-label="年份"><span class="subtle">每篇最多展示 3 个片段</span></div></form><p class="hint" id="scope-hint"></p></section><div id="result-summary" class="row"></div><div id="results" aria-live="polite"><div class="empty"><h2>你的文献，可以重新被发现。</h2><p>输入一个关键词开始检索；语义检索支持用完整问题寻找相关片段。</p></div></div></section>
+<section id="journal-view" class="view" hidden><section class="card"><div class="row"><h2>期刊动态</h2><button id="discover" class="secondary">立即检查</button></div><p class="subtle">只收集公开书目和来源链接。官网目录可能晚于纸刊出版。</p><div id="journals"></div><p id="updates"></p><a href="/api/discovery/report" target="_blank" rel="noopener">查看最近更新报告 ↗</a></section></section>
+<section id="settings-view" class="view" hidden><section class="card"><div class="row"><h2>连接 Zotero</h2><button id="zotero-check" class="secondary">测试连接</button></div><p class="subtle">保持 Zotero 打开，在“设置 → 高级”中允许此计算机上的应用与 Zotero 通信。</p><form id="preferences"><label for="roots">PDF 文件夹许可范围</label><p class="hint">选择 Zotero 的 storage 或链接附件文件夹。每行一个路径。留空时只导入书目信息。</p><textarea id="roots" rows="3" placeholder="每行填写一个本机文件夹路径"></textarea><button type="button" id="pick-folder" class="secondary" hidden>选择文件夹</button><label for="keywords">语义试点文件夹名称（可选）</label><p class="hint">用逗号分隔，如：生育,婚育。留空时覆盖全部资料；大资料库建议先试点。</p><input id="keywords" placeholder="Zotero 文件夹名称"><div class="actions"><button>保存设置</button></div></form></section>
+<section class="card"><div class="row"><h2>本地语义检索</h2><span id="model-status"></span></div><p class="subtle">使用多语 E5 模型在本机计算。首次需要下载模型；不上传文献。模型和索引会占用额外磁盘空间。</p><div class="toolbar"><button id="model" class="secondary">下载本地模型</button><button id="embed" class="secondary">构建语义索引</button></div><p class="hint">导入或文件夹范围改变后请刷新语义索引。混合检索合并全文与语义排名，不生成论文结论。</p></section>
+<section class="card"><h2>附件与维护</h2><ul id="warnings"></ul><p><a href="/api/files/issues" target="_blank" rel="noopener">查看全部附件提示 ↗</a></p><button id="data-folder" class="secondary" hidden>打开资料文件夹</button><button id="release-page" class="secondary">查看软件版本</button><p class="hint">关闭软件后备份资料文件夹；卸载软件不会删除资料。扫描 PDF 仍需 OCR。</p></section></section>
+<footer>PDF 页序、文件页标签和刊物印刷页码可能不同，请回到原文核对。</footer></main><script src="/static/app.js"></script></body></html>

@@ -1,3 +1,4 @@
+import json
 import secrets
 import threading
 from hashlib import sha256
@@ -13,6 +14,8 @@ from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .config import allowed_roots
+from .jobs import Jobs
+from .preferences import apply_preferences, save_preferences
 from .scope import active_scope
 from .semantic import LocalEmbedder, search_vectors
 from .service import build_configured_embeddings, sync_zotero
@@ -21,13 +24,23 @@ from .service import build_configured_embeddings, sync_zotero
 class Query(BaseModel):
     query: str = Field(min_length=1, max_length=500)
     mode: str = "fulltext"
+    author: str = Field(default="", max_length=100)
+    year: str = Field(default="", max_length=4)
+
+
+class Preferences(BaseModel):
+    pdf_roots: list[str] = Field(max_length=20)
+    collection_keywords: list[str] = Field(default_factory=list, max_length=30)
 
 
 def create_app(store, config):
+    apply_preferences(config, store.directory)
     app = FastAPI(title="SocioLibrary", docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
     token = secrets.token_urlsafe(32)
     operation_lock = threading.Lock()
+    jobs = Jobs()
+    app.state.jobs = jobs
     static = Path(__file__).parent / "static"
     model_path = config.get("semantic", {}).get("model_path") or store.directory / "models" / "e5-small"
     embedder_cache = []
@@ -120,7 +133,52 @@ def create_app(store, config):
                 "discovery": store.state("last_discovery"), "file_notices": problems, "file_notice_count": problem_count,
                 "pdf_roots_configured": bool(allowed_roots(config)), "semantic_model_ready": (Path(model_path) / "sociolit-model.json").is_file(),
                 "semantic_scope": scope_label, "semantic_progress": scope_progress, "library_busy": library_busy,
-                "journals": journals}
+                "journals": journals, "job": jobs.snapshot(), "version": __import__("sociolit").__version__,
+                "pdf_roots": [str(p) for p in allowed_roots(config)],
+                "collection_keywords": config.get("semantic", {}).get("collection_keywords", [])}
+
+    @app.post("/api/zotero/check")
+    def check_zotero(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        from .zotero import ZoteroClient
+        try:
+            with ZoteroClient() as client:
+                response = client._get("/users/0/items?format=json&limit=1")
+            if not isinstance(response.json(), list):
+                raise ValueError("Unrecognized Zotero response")
+            return {"connected": True}
+        except (RuntimeError, ValueError, OSError) as exc:
+            raise HTTPException(400, "未连接到 Zotero。请打开 Zotero，并在设置 → 高级中允许本机应用通信。") from exc
+
+    @app.post("/api/preferences")
+    def preferences(body: Preferences, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        def save():
+            if jobs.snapshot()["state"] == "running":
+                raise RuntimeError("请等待后台任务完成后再修改设置。")
+            ensure_library_available()
+            save_preferences(config, store.directory, body.pdf_roots, body.collection_keywords)
+            return {"saved": True}
+        return mutate(save)
+
+    @app.post("/api/jobs/{action}")
+    def start_job(action: str, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        from .scheduler import discover_due
+        from .semantic import prepare_model
+        actions = {
+            "import": lambda progress: mutate(lambda: sync_zotero(store, config, progress=progress)),
+            "embed": lambda progress: mutate(lambda: build_configured_embeddings(store, config, embedder(), progress=progress)),
+            "discover": lambda progress: mutate(lambda: discover_due(store, config, force=True)),
+            "model": lambda progress: mutate(lambda: prepare_model(model_path)),
+        }
+        if action not in actions:
+            raise HTTPException(404, "Unknown task")
+        try:
+            ensure_library_available()
+            return jobs.start(action, actions[action])
+        except RuntimeError as exc:
+            raise HTTPException(409, str(exc)) from exc
 
     @app.post("/api/import")
     def sync(x_sociolit_token: str | None = Header(default=None)):
@@ -145,14 +203,52 @@ def create_app(store, config):
     def search(body: Query, x_sociolit_token: str | None = Header(default=None)):
         authorize(x_sociolit_token)
         try:
-            if body.mode == "semantic":
+            selected = None
+            if body.author or body.year:
+                with store.connect() as db:
+                    records = db.execute("SELECT id,metadata FROM items").fetchall()
+                selected = []
+                for record in records:
+                    meta = json.loads(record["metadata"])
+                    authors = " ".join(str(a) for a in meta.get("authors", []))
+                    if body.author.casefold() in authors.casefold() and (not body.year or str(meta.get("year", "")) == body.year):
+                        selected.append(record["id"])
+                if not selected:
+                    return []
+            if body.mode in ("semantic", "hybrid"):
                 scope = active_scope(store, config)
                 ensure_library_available()
-                rows = search_vectors(store, embedder(), body.query, item_ids=scope["item_ids"] if scope else None)
+                ids = scope["item_ids"] if scope else None
+                if selected is not None:
+                    ids = list(set(selected).intersection(ids)) if ids is not None else selected
+                    if not ids:
+                        return []
+                semantic = search_vectors(store, embedder(), body.query, limit=100, item_ids=ids)
+                if body.mode == "hybrid":
+                    from .retrieval import reciprocal_rank_fusion
+                    rows = reciprocal_rank_fusion(store.search(body.query, limit=100, item_ids=ids), semantic)
+                else:
+                    rows = semantic
             elif body.mode == "fulltext":
-                rows = store.search(body.query)
+                rows = store.search(body.query, limit=100, item_ids=selected)
             else:
                 raise ValueError("Unknown search mode")
+            # Prevent a long paper from occupying the entire result list.
+            counts, diverse = {}, []
+            for row in rows:
+                count = counts.get(row["item_id"], 0)
+                if count < 3:
+                    diverse.append(row)
+                    counts[row["item_id"]] = count + 1
+                if len(diverse) == 20:
+                    break
+            rows = diverse
+            with store.connect() as db:
+                for row in rows:
+                    meta = json.loads(db.execute("SELECT metadata FROM items WHERE id=?", (row["item_id"],)).fetchone()[0])
+                    row["authors"] = meta.get("authors", [])
+                    row["year"] = str(meta.get("year", ""))
+                    row["journal"] = (meta.get("raw") or {}).get("journal", "") if isinstance(meta.get("raw"), dict) else ""
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(400, str(exc)) from exc
         for row in rows:

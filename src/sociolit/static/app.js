@@ -1,72 +1,30 @@
-let token = '';
-let semanticScope = '';
-const el = id => document.getElementById(id);
-function notice(text, error = false) { el('notice').textContent = text; el('notice').className = error ? 'error' : ''; }
-async function api(path, body) {
-  const response = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json','X-Sociolit-Token':token}, body:JSON.stringify(body || {})});
-  const data = await response.json();
-  if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : '操作失败，请检查配置');
-  return data;
+let token='', semanticScope='', settingsLoaded=false, searchBusy=false, handledJob='';
+const el=id=>document.getElementById(id);
+function notice(text,error=false){el('notice').textContent=text;el('notice').className=error?'error':'';}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!==id);document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.view===id));}
+document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>showView(n.dataset.view));
+el('setup-open').onclick=()=>showView('settings-view');
+async function api(path,body={}){const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Sociolit-Token':token},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:'操作失败，请检查设置');return data;}
+const taskNames={import:'同步 Zotero',embed:'构建语义索引',discover:'检查期刊更新',model:'下载本地模型'};
+const phases={starting:'正在准备',metadata:'读取书目',attachment_paths:'核对附件',metadata_index:'更新书目索引',pdf_index:'提取 PDF 文字',embedding:'生成语义向量'};
+function fileNotice(f){return f.title+'：'+({needs_ocr:'没有文字层，需要 OCR。',missing:'附件未下载、已移动或不在许可目录。',error:'PDF 未能提取，请检查文件。'}[f.status]||'部分页面没有文字层，请核对原文。');}
+async function refresh(){const response=await fetch('/api/status');if(!response.ok)throw new Error('连接本地资料库失败');const s=await response.json();token=s.token;semanticScope=s.semantic_scope||'';el('version').textContent='Windows · '+s.version;
+ const busy=s.library_busy||s.job.state==='running';for(const id of ['import','embed','discover','model'])el(id).disabled=busy;
+ el('model').disabled=busy||s.semantic_model_ready;el('embed').disabled=busy||!s.semantic_model_ready;
+ el('model-status').textContent=s.semantic_model_ready?'模型已就绪':'尚未下载';
+ if(!settingsLoaded){el('roots').value=(s.pdf_roots||[]).join('\n');el('keywords').value=(s.collection_keywords||[]).join(',');settingsLoaded=true;}
+ el('setup-card').hidden=s.pdf_roots_configured||s.stats.items>0;
+ const p=s.semantic_progress;el('scope-hint').textContent=semanticScope?`语义范围：${semanticScope}及其子文件夹。${p?`索引 ${p.done.toLocaleString()} / ${p.total.toLocaleString()} 个片段。`:''}全文检索覆盖已导入资料。`:'全文检索可直接使用；语义和混合检索需要先下载模型并构建索引。';
+ el('stats').replaceChildren();for(const [key,label] of Object.entries({items:'文献与笔记',files:'已处理附件',chunks:'原文片段',vectors:'语义向量'})){const b=document.createElement('div');b.className='stat';const num=document.createElement('b');num.textContent=s.stats[key].toLocaleString();const text=document.createElement('span');text.textContent=label;b.append(num,text);el('stats').append(b);}
+ el('journals').replaceChildren();for(const j of s.journals){const box=document.createElement('span');const a=document.createElement(j.homepage?'a':'strong');a.textContent=j.name;if(j.homepage){a.href=j.homepage;a.target='_blank';a.rel='noopener';}box.append(a,document.createTextNode(j.status==='official_current_snapshot'?'当期快照':j.enabled?'已启用':'待接入'));el('journals').append(box);}
+ const d=s.discovery;el('updates').textContent=d?`最近检查 ${d.checked||''}，新增 ${d.new||0} 篇、更新 ${d.updated||0} 篇。${d.complete?'':'部分来源失败：'+(d.errors||[]).join('；')}《社会学研究》《中国人口科学》只检查当期，长期未运行可能漏期；网络首发不保证覆盖。`:'尚未检查期刊。桌面软件启动时按月检查已启用来源。';
+ const warnings=[...(s.import_incomplete?['上次导入尚未完成；再次同步会继续处理。']:[]),...(!s.pdf_roots_configured?['尚未设置 PDF 许可目录，目前只能导入书目。']:[]),...(s.file_notice_count?[`有 ${s.file_notice_count} 个附件需要注意，仅列前 ${s.file_notices.length} 个：`]:[]),...s.file_notices.map(fileNotice)];el('warnings').replaceChildren();for(const w of warnings){const li=document.createElement('li');li.textContent=w;el('warnings').append(li);}
+ const job=s.job;el('task-panel').hidden=job.state==='idle';if(job.state!=='idle'){el('task-name').textContent=taskNames[job.name]||'后台任务';el('task-phase').textContent=job.state==='running'?(phases[job.phase]||job.phase):job.state==='done'?'已完成':'需要处理';const bar=el('task-progress');if(job.state==='running'&&job.total){bar.max=job.total;bar.value=job.done;}else if(job.state==='running'){bar.removeAttribute('value');}else{bar.max=1;bar.value=1;}el('task-detail').textContent=job.state==='error'?job.error:job.state==='running'?(job.total?`${job.done.toLocaleString()} / ${job.total.toLocaleString()}；可以切换页面继续检索。`:'正在处理，可以切换页面。大型资料库首次同步可能需要较长时间。'):'处理结果已经保存到本机。';if(job.state!=='running'&&handledJob!==job.started){handledJob=job.started;notice(job.state==='error'?job.error:(taskNames[job.name]||'任务')+'已完成。',job.state==='error');}}
 }
-function fileNotice(file) {
-  if (file.status === 'needs_ocr') return file.title + '：没有检测到文字层，需要 OCR。';
-  if (file.status === 'missing') return file.title + '：附件未下载、已移动或不在许可目录。';
-  if (file.status === 'error') return file.title + '：PDF 未能提取，请检查文件。';
-  return file.title + '：部分页面没有检测到文字层，查阅时请核对原文。';
-}
-async function refresh() {
-  const status = await (await fetch('/api/status')).json(); token = status.token;
-  el('import').disabled = status.library_busy;
-  el('embed').disabled = status.library_busy;
-  el('discover').disabled = status.library_busy;
-  semanticScope = status.semantic_scope || '';
-  const progress = status.semantic_progress;
-  el('scope-hint').textContent = semanticScope ? `全文检索覆盖已导入文献；语义检索试点范围为“${semanticScope}”相关文件夹及子文件夹。${progress?`试点索引进度：${progress.done} / ${progress.total} 个片段。`:''}` : '全文检索支持中英文。语义检索需先安装本地模型并构建索引；结果相似度不代表引文证据强度。';
-  el('stats').replaceChildren();
-  for (const [key,label] of Object.entries({items:'文献与笔记',files:'已处理附件',chunks:'可追溯片段',vectors:'语义向量'})) {
-    const box=document.createElement('div'); box.className='stat';
-    const number=document.createElement('b'); number.textContent=status.stats[key];
-    const name=document.createElement('span'); name.textContent=label; box.append(number,name); el('stats').append(box);
-  }
-  el('journals').replaceChildren();
-  for (const journal of status.journals) {
-    const span=document.createElement('span');
-    if(journal.homepage){const link=document.createElement('a'); link.href=journal.homepage; link.target='_blank'; link.rel='noopener'; link.textContent=journal.name; span.append(link);} else {span.append(document.createTextNode(journal.name));}
-    span.append(document.createTextNode(' · '+(journal.status==='official_current_snapshot'?'当期目录':'enabled' in journal && journal.enabled?'已启用':'来源待接入'))); el('journals').append(span);
-  }
-  el('warnings').replaceChildren();
-  const warnings=[
-    ...(status.library_busy?['文献或语义索引正在构建；全文检索可用，导入和手动期刊更新请等待当前任务完成。']:[]),
-    ...(status.import_incomplete?['本次或上次导入尚未完成。请等待当前导入；如果已经中断，可再次点击导入继续。']:[]),
-    ...(!status.pdf_roots_configured?['尚未设置 PDF 许可目录：导入仅包含书目信息。参照 README 配置一次后即可一键同步。']:[]),
-    ...(!status.semantic_model_ready?['本地语义模型尚未安装；全文检索可直接使用。']:[]),
-    ...(status.file_notice_count?[`有 ${status.file_notice_count} 份附件需要注意，下方展示前 ${status.file_notices.length} 份。`]:[]),
-    ...status.file_notices.map(fileNotice)
-  ];
-  for (const text of warnings) {const item=document.createElement('li'); item.textContent=text; el('warnings').append(item);}
-  const d=status.discovery;
-  el('updates').textContent=d?`最近检查：${d.checked||'启动检查'}；新增 ${d.new||0} 篇，更新 ${d.updated||0} 篇。${d.complete?'':'部分来源失败：'+(d.errors||[]).join('；')} 《社会学研究》《中国人口科学》只检查当期，长期未运行可能漏期；官网目录不含目录之外的网络首发文章。`:'尚未运行期刊更新。待接入来源不会自动发出网络请求。';
-}
-for (const [id,path,label] of [['import','/api/import','导入'],['embed','/api/embed','构建索引'],['discover','/api/discover','期刊更新']]) {
-  el(id).onclick=async()=>{
-    document.querySelectorAll('.toolbar button').forEach(button=>button.disabled=true); notice(label+'进行中，请保持本页面和 Zotero 打开…');
-    try {const result=await api(path); notice(label+'完成。'+(result.items_changed!==undefined?`条目变化 ${result.items_changed}，PDF 重建 ${result.files_indexed}，PDF 未变化 ${result.files_unchanged}。`:'')+(result.complete===false?' 部分来源失败，请查看下方提示。':'')); await refresh();}
-    catch(error){notice(error.message,true);} finally{document.querySelectorAll('.toolbar button').forEach(button=>button.disabled=false);}
-  };
-}
-el('search').onsubmit=async event=>{
-  event.preventDefault(); notice('检索中…'); el('results').replaceChildren();
-  try {
-    const rows=await api('/api/search',{query:el('query').value,mode:el('mode').value}); notice(`找到 ${rows.length} 条结果（最多显示 20 条）。`+(el('mode').value==='semantic'&&semanticScope?` 语义试点范围：${semanticScope}。`:''));
-    for (const row of rows) {
-      const box=document.createElement('article'); box.className='result';
-      const type=document.createElement('small'); type.textContent=({pdf:'PDF 原文',metadata:'书目信息',note:'个人笔记'})[row.kind]||row.kind;
-      if(row.page) type.textContent+=` · PDF 第 ${row.page} 页 · 文件页标签 ${row.page_label}`;
-      const heading=document.createElement('h3'); heading.textContent=row.title; const paragraph=document.createElement('pre'); paragraph.textContent=row.text; box.append(type,heading,paragraph);
-      if(row.pdf_url){const link=document.createElement('a'); link.href=row.pdf_url; link.target='_blank'; link.rel='noopener'; link.textContent='打开 PDF 对应页 ↗'; box.append(link);}
-      el('results').append(box);
-    }
-  } catch(error){notice(error.message,true);}
-};
-refresh().then(()=>notice('本地资料库已就绪。')).catch(error=>notice(error.message,true));
-setInterval(()=>{if(!document.hidden) refresh().catch(()=>{});},15000);
+for(const id of ['import','embed','discover','model'])el(id).onclick=async()=>{try{el(id).disabled=true;await api('/api/jobs/'+id);notice(taskNames[id]+'已开始。');await refresh();}catch(e){notice(e.message,true);await refresh();}};
+el('preferences').onsubmit=async e=>{e.preventDefault();try{await api('/api/preferences',{pdf_roots:el('roots').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean),collection_keywords:el('keywords').value.split(/[,，、]/).map(s=>s.trim()).filter(Boolean)});notice('设置已保存。现在可以同步 Zotero。');await refresh();}catch(err){notice(err.message,true);}};
+el('zotero-check').onclick=async()=>{notice('正在测试 Zotero 连接…');try{await api('/api/zotero/check');notice('Zotero 已连接，可以同步。');}catch(e){notice(e.message,true);}};
+el('search').onsubmit=async e=>{e.preventDefault();if(searchBusy)return;searchBusy=true;el('search-button').disabled=true;notice('正在检索…');el('results').replaceChildren();try{const rows=await api('/api/search',{query:el('query').value,mode:el('mode').value,author:el('author').value.trim(),year:el('year').value.trim()});el('result-summary').textContent=`${rows.length} 个片段 · ${new Set(rows.map(r=>r.item_id)).size} 篇资料${el('mode').value!=='fulltext'&&semanticScope?' · 范围：'+semanticScope:''}`;notice('检索完成。');if(!rows.length){const box=document.createElement('div');box.className='empty';box.textContent='暂未找到匹配片段。试试减少关键词、移除作者或年份筛选，或同步新文献。';el('results').append(box);}for(const r of rows){const box=document.createElement('article');box.className='result';const type=document.createElement('small');const label=({pdf:'PDF 原文',metadata:'书目信息',note:'个人笔记'})[r.kind]||r.kind;type.textContent=label+(r.page?` · PDF 第 ${r.page} 页 · 文件页标签 ${r.page_label}`:'');const h=document.createElement('h3');h.textContent=r.title;const meta=document.createElement('small');meta.textContent=[(r.authors||[]).join('、'),r.year,r.journal].filter(Boolean).join(' · ');const text=document.createElement('pre');text.textContent=r.text;const actions=document.createElement('div');actions.className='actions';if(r.pdf_url){const a=document.createElement('a');a.href=r.pdf_url;a.target='_blank';a.rel='noopener';a.textContent='查看原文对应页 ↗';actions.append(a);}const copy=document.createElement('button');copy.className='text-button';copy.textContent='复制出处与片段';copy.onclick=async()=>{try{await navigator.clipboard.writeText([meta.textContent,r.title,type.textContent,r.text].join('\n'));notice('已复制出处与片段，请对照原文核对。');}catch(err){notice('暂时不能访问剪贴板，可手动选择片段复制。',true);}};actions.append(copy);box.append(type,h,meta,text,actions);el('results').append(box);}}catch(err){notice(err.message,true);}finally{searchBusy=false;el('search-button').disabled=false;}};
+function attachDesktop(){const bridge=window.pywebview&&window.pywebview.api;if(!bridge)return;el('pick-folder').hidden=false;el('data-folder').hidden=false;el('pick-folder').onclick=async()=>{try{const path=await bridge.choose_folder();if(path){const roots=el('roots').value.split('\n').filter(Boolean);if(!roots.includes(path))roots.push(path);el('roots').value=roots.join('\n');}}catch(e){notice('文件夹选择失败，请手动填写路径。',true);}};el('data-folder').onclick=()=>bridge.open_data_folder();}
+window.addEventListener('pywebviewready',attachDesktop);attachDesktop();el('release-page').onclick=()=>{const bridge=window.pywebview&&window.pywebview.api;if(bridge)bridge.open_releases();else window.open('https://github.com/Yoesher/SocioLibrary/releases','_blank','noopener');};
+refresh().catch(e=>notice(e.message,true));setInterval(()=>{if(!document.hidden)refresh().catch(()=>notice('本地连接已中断，请重新打开软件。',true));},2500);
