@@ -41,6 +41,7 @@
   el('comparison-clear').onclick=()=>{basket.clear();renderBasket();};
   async function loadRecommendations(identity) {seed=identity;showView('literature-view');
     await loadBoards();
+    if(board)await loadConnections();
     notice('正在本机查找相似文献…');
     const result=await api('/api/literature/recommend',{item_id:identity,mode:el('recommend-mode').value});
     el('recommend-seed').textContent='参考文献：'+result.seed.title;
@@ -166,6 +167,9 @@
   el('annotations-prev').onclick=()=>{annotationOffset=Math.max(0,annotationOffset-50);working(loadAnnotations);};
   el('annotations-next').onclick=()=>{annotationOffset+=50;working(loadAnnotations);};
   document.querySelector('[data-view="annotations-view"]').addEventListener('click',()=>working(loadAnnotations));
-  document.querySelector('[data-view="literature-view"]').addEventListener('click',()=>working(()=>loadBoards()));
+  document.querySelector('[data-view="literature-view"]').addEventListener('click',()=>working(async()=>{
+    await loadBoards();
+    if(board){if(!dirty&&!candidate)await openBoard(board.id);else await loadConnections();}
+  }));
   renderBasket();
 })();
