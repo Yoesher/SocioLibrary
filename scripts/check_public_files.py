@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BLOCKED_SUFFIXES = {".pdf", ".epub", ".sqlite", ".sqlite3", ".db", ".safetensors", ".pem", ".key", ".ris", ".bib", ".jpg", ".png"}
-BLOCKED_PARTS = {".venv", "storage", "data", "models", "exports", "reports", "work", "logs"}
+BLOCKED_PARTS = {".venv", "storage", "data", "models", "exports", "reports", "work", "logs", "backups"}
 TOKEN = re.compile(r"(?:gh[pousr]_" + r"[A-Za-z0-9]{20,}|github_pat_" + r"[A-Za-z0-9_]{30,}|sk-proj-" + r"[A-Za-z0-9_-]{20,}|-----BEGIN " + r"(?:RSA |OPENSSH )?PRIVATE KEY-----)")
 USER_PATH = re.compile(r"(?:[A-Za-z]:[\\/]Users[\\/](?!YOUR_NAME(?:[\\/]))[^\\/\s\"']+)", re.I)
 
@@ -19,6 +19,7 @@ def violations(paths):
         if (path.is_symlink() or path.suffix.lower() in BLOCKED_SUFFIXES
                 or any(part in BLOCKED_PARTS for part in parts)
                 or path.name == "config.local.toml" or path.name.endswith(".local.toml")
+                or path.name in {"preferences.json", "desktop-version.json", "desktop-location.json"}
                 or (path.name.startswith(".env") and path.name != ".env.example")):
             errors.append(f"Excluded file: {relative}")
             continue

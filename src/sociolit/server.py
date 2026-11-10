@@ -23,6 +23,7 @@ from .scope import active_scope
 from .semantic import LocalEmbedder, search_vectors
 from .service import build_configured_embeddings, sync_zotero
 from .subscriptions import apply_feeds, configure_feed
+from .upgrades import upgrade_status
 
 
 class Query(BaseModel):
@@ -173,7 +174,7 @@ def create_app(store, config):
                 "journals": journals, "job": jobs.snapshot(), "version": __import__("sociolit").__version__,
                 "pdf_roots": [str(p) for p in allowed_roots(config)],
                 "collection_keywords": config.get("semantic", {}).get("collection_keywords", []),
-                "ocr_pages": store.state("ocr_summary", {}).get("pages", 0)}
+                "ocr_pages": store.state("ocr_summary", {}).get("pages", 0), "upgrade": upgrade_status(store.directory)}
 
     @app.get("/api/research")
     def research_records(x_sociolit_token: str | None = Header(default=None)):

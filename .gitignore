@@ -48,6 +48,10 @@ reports/
 outputs/
 work/
 logs/
+backups/
+preferences.json
+desktop-version.json
+desktop-location.json
 *.log
 
 # An arbitrary Zotero JSON/RIS/BibTeX export is private even though metadata.

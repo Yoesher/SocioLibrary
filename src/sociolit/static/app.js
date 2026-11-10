@@ -12,6 +12,7 @@ async function refresh(){const response=await fetch('/api/status');if(!response.
  const busy=s.library_busy||s.job.state==='running';for(const id of ['import','embed','discover','model','ocr'])el(id).disabled=busy;
  el('ocr').disabled=busy||!s.pdf_roots_configured;el('model').disabled=busy||s.semantic_model_ready;el('embed').disabled=busy||!s.semantic_model_ready;
  el('model-status').textContent=s.semantic_model_ready?'模型已就绪':'尚未下载';
+ el('upgrade-status').textContent=s.upgrade&&s.upgrade.inherited?(s.upgrade.backup_ready?'已沿用旧资料库。升级前的数据库和设置备份保存在资料文件夹 backups 中。':'已沿用原资料库。'):'新版覆盖安装会沿用此资料目录；无需重新导入或下载已有模型。';
  if(!settingsLoaded){el('roots').value=(s.pdf_roots||[]).join('\n');el('keywords').value=(s.collection_keywords||[]).join(',');settingsLoaded=true;}
  el('setup-card').hidden=s.pdf_roots_configured||Boolean(s.last_import);
  const p=s.semantic_progress;el('scope-hint').textContent=semanticScope?`语义范围：${semanticScope}及其子文件夹。${p?`索引 ${p.done.toLocaleString()} / ${p.total.toLocaleString()} 个片段。`:''}全文检索覆盖已导入资料。`:'全文检索可直接使用；语义和混合检索需要先下载模型并构建索引。';

@@ -1,5 +1,5 @@
 #ifndef AppVersion
-#define AppVersion "0.2.0"
+#define AppVersion "0.3.1"
 #endif
 [Setup]
 AppId={{9DA31A80-0D44-4490-87B0-8F3B9FA7D6AB}
@@ -21,6 +21,11 @@ WizardStyle=modern
 UninstallDisplayIcon={app}\SocioLibrary.exe
 LicenseFile=..\LICENSE
 CloseApplications=yes
+RestartApplications=no
+AppMutex=SocioLibraryDesktop
+UsePreviousAppDir=yes
+UsePreviousTasks=yes
+DisableDirPage=auto
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]

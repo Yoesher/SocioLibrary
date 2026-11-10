@@ -37,6 +37,11 @@ jobs:
             throw 'Frozen smoke test failed'
           }
           Get-Content "$data/smoke-result.json"
+      - name: Verify installation over v0.3.0 and research-data inheritance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: ./scripts/verify-windows-upgrade.ps1
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: SocioLibrary-Windows-x64
