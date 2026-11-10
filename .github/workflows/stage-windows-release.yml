@@ -1,0 +1,45 @@
+name: Stage Windows release assets
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Successful Windows artifact run in this repository
+        required: true
+      tag:
+        description: Existing draft release tag
+        default: v0.2.0
+        required: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  stage:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN: ${{ inputs.source_run }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Verify draft and successful build
+        shell: pwsh
+        run: |
+          $draft = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft --jq .isDraft
+          if ($LASTEXITCODE -ne 0 -or $draft -ne 'true') { throw 'Only existing draft releases may receive assets' }
+          $conclusion = gh run view $env:SOURCE_RUN --repo $env:GITHUB_REPOSITORY --json conclusion --jq .conclusion
+          if ($LASTEXITCODE -ne 0 -or $conclusion -ne 'success') { throw 'Source artifact run was not successful' }
+      - name: Download and verify public binary artifacts
+        shell: pwsh
+        run: |
+          gh run download $env:SOURCE_RUN --repo $env:GITHUB_REPOSITORY --name SocioLibrary-Windows-x64 --dir artifacts
+          if ($LASTEXITCODE -ne 0) { throw 'Artifact retrieval failed' }
+          foreach ($line in Get-Content artifacts/SHA256SUMS.txt) {
+            $parts = $line -split '  ',2
+            if ($parts.Length -ne 2 -or $parts[1] -notmatch '^SocioLibrary-[0-9.]+-Windows-x64-(Setup.exe|Portable.zip)$') { throw 'Unexpected artifact filename' }
+            if ((Get-FileHash (Join-Path artifacts $parts[1]) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $parts[0]) { throw 'Artifact checksum mismatch' }
+          }
+      - name: Upload assets to the draft only
+        shell: pwsh
+        run: |
+          gh release upload $env:RELEASE_TAG artifacts/*.exe artifacts/*.zip artifacts/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed' }
