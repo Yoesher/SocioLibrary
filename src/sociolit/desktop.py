@@ -66,6 +66,12 @@ def main():
     logging.basicConfig(level=logging.INFO, handlers=[handler])
     config = base_config()
     store = Store(directory)
+    # Preserve a previously selected semantic pilot when upgrading from the source version.
+    # PDF roots still require an explicit selection in the new desktop settings.
+    if not (directory / "preferences.json").exists():
+        previous_scope = store.state("semantic_scope")
+        if isinstance(previous_scope, dict) and previous_scope.get("label"):
+            config.setdefault("semantic", {})["collection_keywords"] = previous_scope["label"].split("、")
     if args.update_journals:
         from .scheduler import discover_due
         discover_due(store, config)

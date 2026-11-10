@@ -106,10 +106,10 @@ def create_app(store, config):
         if isinstance(last_import, dict):
             last_import = {k: v for k, v in last_import.items() if k != "warnings"}
         scope = store.state("semantic_scope")
-        scope_label = scope.get("label") if isinstance(scope, dict) else "、".join(config.get("semantic", {}).get("collection_keywords", []))
+        scope_label = "、".join(config.get("semantic", {}).get("collection_keywords", []))
         scope_progress = None
         manifest = Path(model_path) / "sociolit-model.json"
-        if isinstance(scope, dict) and scope.get("item_ids") and manifest.is_file():
+        if isinstance(scope, dict) and scope.get("label") == scope_label and scope.get("item_ids") and manifest.is_file():
             model_key = sha256(manifest.read_bytes()).hexdigest()
             with store.connect() as db:
                 db.execute("CREATE TEMP TABLE scope_items(id TEXT PRIMARY KEY)")
