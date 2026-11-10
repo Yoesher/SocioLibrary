@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 
 from . import research
+from .ai import Profiles
 from .ocr import initialize as initialize_ocr
 from .store import Store
 
@@ -35,6 +36,10 @@ def seed_upgrade_fixture(directory):
     model.mkdir(parents=True)
     (model / "synthetic-model.txt").write_text("Synthetic model placeholder; not real model weights.", encoding="utf-8")
     (directory / "desktop-version.json").write_text(json.dumps({"version": "0.3.0"}), encoding="utf-8")
+    if __import__("os").name == "nt":
+        Profiles(directory).save(identity=None, name="Synthetic AI connection", protocol="responses",
+            base_url="https://api.openai.com/v1", model="synthetic-model", max_output_tokens=2048,
+            api_key="synthetic-smoke-secret")
 
 
 def check_upgrade_fixture(directory, store):
@@ -54,4 +59,9 @@ def check_upgrade_fixture(directory, store):
     with sqlite3.connect(directory / marker["backup"] / "library.sqlite3") as db:
         assert db.execute("SELECT body FROM reading_notes").fetchone()[0] == "Synthetic note survives upgrade"
         assert db.execute("PRAGMA quick_check").fetchone()[0] == "ok"
+    if __import__("os").name == "nt":
+        profiles = Profiles(directory)
+        identity = profiles.list()["profiles"][0]["id"]
+        assert profiles.key(profiles.get(identity)) == "synthetic-smoke-secret"
+        assert (directory / marker["backup"] / "ai-profiles.json").read_bytes() == profiles.path.read_bytes()
     return {"data_inherited": True, "snapshot_verified": True, "from_version": "0.3.0"}

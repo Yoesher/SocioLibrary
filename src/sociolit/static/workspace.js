@@ -138,7 +138,8 @@
 
   async function installReady() {
     if (installing || !updateContext || !updateContext.supported) return;
-    if (exporting || noteDirty || preferencesDirty() || searchBusy || libraryStatus.library_busy ||
+    if (exporting || noteDirty || preferencesDirty() || searchBusy || (window.isAIBusy && window.isAIBusy()) ||
+        (window.isAISettingsDirty && window.isAISettingsDirty()) || libraryStatus.library_busy ||
         libraryStatus.job.state === 'running') {
       el('software-progress-text').textContent = '更新包已就绪，等待保存笔记和设置、结束当前任务；也可选择稍后安装。';
       return;
@@ -153,7 +154,7 @@
   }
   async function beginUpgrade() {
     showView('software-view');
-    if (noteDirty || preferencesDirty()) { notice('请先保存笔记和资料设置，再开始升级。', true); return; }
+    if (noteDirty || preferencesDirty() || (window.isAISettingsDirty && window.isAISettingsDirty())) { notice('请先保存笔记、资料与 AI 设置，再开始升级。', true); return; }
     if (!updateState || !updateState.available_version) return;
     installIntent = Boolean(updateContext && updateContext.supported);
     if (updateState.state === 'ready') { await installReady(); return; }

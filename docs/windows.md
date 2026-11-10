@@ -2,6 +2,8 @@
 
 面向 Windows 10 / 11 x64；本轮不发布 macOS、Linux、ARM 原生或 32 位安装包。
 
+0.5 新增“AI 文献阅读”：可配置自己的 OpenAI / ChatGPT API、多种兼容服务及本机模型，逐次预览选中片段并确认后再发送。密钥在 Windows 当前账号下加密，随原资料目录保留，升级快照包含加密配置。详见 [AI 配置和使用](ai.md)。
+
 ## 安装
 
 从 [GitHub Releases](https://github.com/Yoesher/SocioLibrary/releases) 下载名称包含 `Windows-x64-Setup.exe` 的安装包。双击后安装到当前用户目录，开始菜单中启动 SocioLibrary。无需安装 Python、Node 或 Docker。

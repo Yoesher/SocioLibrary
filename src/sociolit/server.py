@@ -7,6 +7,8 @@ from pathlib import Path
 from urllib.parse import quote, urlparse
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from filelock import FileLock, Timeout
@@ -14,6 +16,7 @@ from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from . import research
+from .ai_routes import attach_ai
 from .config import allowed_roots
 from .jobs import Jobs
 from .ocr import initialize as initialize_ocr
@@ -79,7 +82,7 @@ def chunk_digest(row):
     return sha256(json.dumps(values, ensure_ascii=False).encode()).hexdigest()
 
 
-def create_app(store, config, *, updater=None):
+def create_app(store, config, *, updater=None, ai_workspace=None):
     research.initialize(store)
     initialize_ocr(store)
     apply_feeds(store, config)
@@ -141,6 +144,16 @@ def create_app(store, config, *, updater=None):
                 pass
         except Timeout as exc:
             raise RuntimeError("文献或语义索引正在构建，请等待当前任务完成。") from exc
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request, exc):
+        # Pydantic errors normally echo invalid inputs, which may contain an API key.
+        if request.url.path.startswith("/api/ai/"):
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"detail": "AI 设置或请求格式无效，请检查必填项和长度。"}, status_code=422)
+        return await request_validation_exception_handler(request, exc)
+
+    attach_ai(app, store, authorize, mutate, workspace=ai_workspace)
 
     @app.get("/")
     def home():

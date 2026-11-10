@@ -248,6 +248,11 @@ def main():
                 status = client.get(url + "/api/status").json()
                 assert status["version"] == __version__
                 assert client.get(url + "/static/app.js").status_code == 200
+                assert client.get(url + "/static/ai.js").status_code == 200
+                ai_response = client.get(url + "/api/ai/profiles", headers={"X-Sociolit-Token": status["token"]})
+                assert ai_response.status_code == 200
+                assert ai_response.json()["profiles"][0]["has_key"]
+                assert "synthetic-smoke-secret" not in ai_response.text
                 assert client.post(url + "/api/jobs/import").status_code == 403
             from .smoke import check_upgrade_fixture
             from .update_install import native_install_context

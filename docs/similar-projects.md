@@ -50,3 +50,19 @@
 Windows 一键升级依据 [GitHub Releases](https://docs.github.com/en/rest/releases/releases)、[发布文件及 digest](https://docs.github.com/en/rest/releases/assets)、[Inno Setup 安装参数](https://jrsoftware.org/ishelp/topic_setupcmdline.htm)和 [pywebview 窗口接口](https://pywebview.flowrl.com/api/)。实现每日检查、版本说明、下载续传、大小/散列核对、退出交接、安装和重新打开原库，不依赖第三方更新服务器。
 
 下一步优先评估相似文献推荐、人工可审查的重复条目提示、多条件主题检索和 Zotero 批注导入。复杂问答、知识图谱、多端同步与自动合并资料需要另行质量和数据保护验证，未列为本版完成项。
+
+## 0.5 多模型 API 与片段阅读
+
+2026-11-10 继续检查公开项目及官方文档。本轮新增或重读下列来源；只借鉴产品设计，没有复制代码，不把项目介绍视为独立效果评测。
+
+| 一手资料 | 借鉴与落实 | 保留的边界 |
+| --- | --- | --- |
+| [PapersGPT](https://github.com/papersgpt/papersgpt-for-zotero) | 自带 API 密钥、自定义兼容地址、跨文献比较；落实多连接及所选片段比较 | 不自动通读整库、不写回 Zotero；仅可见材料 |
+| [Cherry Studio](https://github.com/CherryHQ/cherry-studio)、[连接配置文档](https://cherryai.com/docs/en/mobile/providers-and-models/) | 区分服务商、协议、地址和模型，提供连接测试；落实可编辑预设及多连接 | 未采用其账号登录或密钥迁移机制 |
+| [AnythingLLM](https://github.com/Mintplex-Labs/anything-llm)、[兼容服务整合原则](https://github.com/Mintplex-Labs/anything-llm/blob/master/CONTRIBUTING.md) | 用通用协议覆盖同类服务，避免为每个兼容供应商重复开发 | 先保留本机检索及出处，不引入自动代理或多用户部署 |
+| [Dify](https://github.com/langgenius/dify) | 将模型接入、检索、生成工作流分开；本项目分别实现连接、预览和按次生成 | 不引入其服务器栈，不复制工作流引擎 |
+| [Ollama](https://docs.ollama.com/api/openai-compatibility)、[LM Studio](https://lmstudio.ai/docs/developer/openai-compat) | 本机模型也可接入兼容协议；落实回环地址与可无密钥连接 | 需用户自行启动；其内部转发策略由用户确认 |
+
+按 OpenAI 官方文档优先实现 Responses；保留兼容 Chat 和 Claude Messages。生成答复以普通文字和来源清单展示，用户可以保存为待核对笔记。将费用确认、输出上限、来源变化拒绝、密钥加密和升级保留一并实现，未使用第三方统一代理转发密钥。服务商接入依据、当前兼容范围及未付费联测的说明见 [AI 文档](ai.md)。
+
+后续优先评估人工标注的回答正确性与引用支持评测、适合大库的索引优化和结构化文献比较。自动代理、云端全文索引、自动改写已保存笔记与无审查批量分析本轮未实现。
