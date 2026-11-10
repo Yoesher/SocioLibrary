@@ -3,7 +3,7 @@
   let profiles = [], presets = [], preview = null, answer = null, busy = false, dirty = false;
   window.isAIBusy = () => busy;
   window.isAISettingsDirty = () => dirty;
-  const types = {pdf: 'PDF 原文', ocr: 'OCR 文字（需核对）', metadata: '书目信息', note: '个人笔记'};
+  const types = {pdf: 'PDF 原文', ocr: 'OCR 文字（需核对）', metadata: '书目信息', note: '个人笔记', annotation: 'Zotero 摘录与个人批注'};
   function invalidate() {preview = null; el('ai-preview').hidden = true; el('ai-consent').checked = false;}
   function updateSelection() {
     invalidate(); el('ai-selected').replaceChildren();

@@ -19,6 +19,7 @@ from . import research
 from .ai_routes import attach_ai
 from .config import allowed_roots
 from .jobs import Jobs
+from .literature_routes import attach_literature
 from .ocr import initialize as initialize_ocr
 from .ocr import process_ocr, windows_ocr
 from .preferences import apply_preferences, save_preferences
@@ -154,6 +155,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
         return await request_validation_exception_handler(request, exc)
 
     attach_ai(app, store, authorize, mutate, workspace=ai_workspace)
+    attach_literature(app, store, config, authorize, mutate, embedder)
 
     @app.get("/")
     def home():
@@ -453,7 +455,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
             row["reading"] = reading.get(row["item_id"], {})
             row["source_digest"] = chunk_digest(row)
             row.pop("source", None)
-            row["pdf_url"] = "/api/pdf/" + quote(row["file_id"], safe="") + "#page=" + str(row["page"]) if row["file_id"] else None
+            row["pdf_url"] = "/api/pdf/" + quote(row["file_id"], safe="") + "#page=" + str(row["page"]) if row["file_id"] and row["page"] else None
         return rows
 
     @app.get("/api/pdf/{file_id:path}")

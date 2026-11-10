@@ -154,6 +154,33 @@ class DesktopAPI:
         result = self._window.create_file_dialog(webview.FOLDER_DIALOG)
         return result[0] if result else None
 
+    def export_comparison(self, identity, format, revision):
+        import re
+
+        import webview
+
+        from . import comparisons
+        if not isinstance(identity, str) or not re.fullmatch(r"[a-f0-9]{32}", identity) or format not in ("md", "csv"):
+            raise ValueError("导出参数无效。")
+        with self._native_lock:
+            content = comparisons.export(self._store, identity, format, revision)
+            paths = self._window.create_file_dialog(webview.SAVE_DIALOG, directory=str(self._directory),
+                save_filename="SocioLibrary-文献对照." + format,
+                file_types=(("CSV (*.csv)" if format == "csv" else "Markdown (*.md)"),))
+            if not paths:
+                return {"saved": False}
+            path = Path(paths[0])
+            if path.suffix.lower() != "." + format:
+                path = path.with_name(path.name + "." + format)
+            temp = path.with_name("." + path.name + "." + uuid.uuid4().hex + ".tmp")
+            try:
+                with temp.open("w", encoding="utf-8-sig" if format == "csv" else "utf-8", newline="") as output:
+                    output.write(content)
+                os.replace(temp, path)
+            finally:
+                temp.unlink(missing_ok=True)
+            return {"saved": True}
+
     def open_data_folder(self):
         os.startfile(str(self._directory))
         return True
@@ -249,6 +276,10 @@ def main():
                 assert status["version"] == __version__
                 assert client.get(url + "/static/app.js").status_code == 200
                 assert client.get(url + "/static/ai.js").status_code == 200
+                assert client.get(url + "/static/literature.js").status_code == 200
+                assert len(client.get(url + "/api/comparisons", headers={"X-Sociolit-Token": status["token"]}).json()) == 1
+                assert client.get(url + "/api/annotations?include_missing=true",
+                    headers={"X-Sociolit-Token": status["token"]}).json()["total"] == 1
                 ai_response = client.get(url + "/api/ai/profiles", headers={"X-Sociolit-Token": status["token"]})
                 assert ai_response.status_code == 200
                 assert ai_response.json()["profiles"][0]["has_key"]

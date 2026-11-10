@@ -56,6 +56,7 @@ software-update.json
 ai-profiles.json
 ai-profiles.lock
 SocioLibrary-AI*.md
+SocioLibrary-文献对照*
 updates/
 SocioLibrary-阅读笔记*.md
 *.log

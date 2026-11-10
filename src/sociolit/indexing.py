@@ -178,6 +178,8 @@ def import_snapshot(store, snapshot, progress=None, *, assume_locked=False):
                 if row[0] not in attachment_ids:
                     db.execute("DELETE FROM files WHERE id=?", (row[0],))
         if is_private:
+            from .annotations import sync_snapshots
+            stats["annotations"] = sync_snapshots(store, snapshot)
             store.set_state("last_import", stats)
             store.set_state("import_generation", store.state("import_generation", 0) + 1)
             store.set_state("import_incomplete", False)

@@ -104,7 +104,7 @@ def build_vectors(store, embedder, batch_size=32, *, item_ids=None, progress=Non
     return total
 
 
-def search_vectors(store, embedder, query, limit=20, *, item_ids=None):
+def search_vectors(store, embedder, query, limit=20, *, item_ids=None, exclude_item_id=None):
     vector = embedder.encode([query], query=True)[0]
     query_norm_squared = sum(x*x for x in vector)
     with store.connect() as db:
@@ -116,7 +116,8 @@ def search_vectors(store, embedder, query, limit=20, *, item_ids=None):
             raise RuntimeError(f"语义索引尚未完成（还有 {missing} 个片段），请等待或继续构建。")
         query = """SELECT c.*,i.title,i.item_key,i.source,v.embedding FROM vectors v
           JOIN chunks c ON c.id=v.chunk_id JOIN items i ON i.id=c.item_id """ + scope_join + " WHERE v.model=?"
-        rows = db.execute(query, (embedder.key,))
+        query += " AND (? IS NULL OR c.item_id<>?)"
+        rows = db.execute(query, (embedder.key, exclude_item_id, exclude_item_id))
         heap = []
         for row in rows:
             result = dict(row)

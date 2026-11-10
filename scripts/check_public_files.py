@@ -21,6 +21,7 @@ def violations(paths):
                 or path.name == "config.local.toml" or path.name.endswith(".local.toml")
                 or path.name in {"preferences.json", "desktop-version.json", "desktop-location.json", "software-update.json", "ai-profiles.json", "ai-profiles.lock"}
                 or path.name.startswith("SocioLibrary-AI")
+                or path.name.startswith("SocioLibrary-文献对照")
                 or path.name.startswith("SocioLibrary-阅读笔记")
                 or (path.name.startswith(".env") and path.name != ".env.example")):
             errors.append(f"Excluded file: {relative}")

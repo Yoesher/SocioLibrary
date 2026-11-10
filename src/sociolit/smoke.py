@@ -3,7 +3,8 @@ import json
 import sqlite3
 from pathlib import Path
 
-from . import research
+from . import annotations as annotation_records
+from . import comparisons, research
 from .ai import Profiles
 from .ocr import initialize as initialize_ocr
 from .store import Store
@@ -40,6 +41,31 @@ def seed_upgrade_fixture(directory):
         Profiles(directory).save(identity=None, name="Synthetic AI connection", protocol="responses",
             base_url="https://api.openai.com/v1", model="synthetic-model", max_output_tokens=2048,
             api_key="synthetic-smoke-secret")
+    _seed_reading_extensions(store)
+
+
+def _seed_reading_extensions(store):
+    from types import SimpleNamespace
+
+    from .ai_context import fingerprint
+    annotation_records.sync_snapshots(store, SimpleNamespace(source_id="synthetic", annotations=[
+        {"key": "ANNOT001", "parent_key": "item", "attachment_key": "file", "type": "highlight",
+         "text": "Retained synthetic annotation", "comment": "Synthetic comment", "page": 1,
+         "page_label": "1", "color": "#ffd400", "tags": ["synthetic"], "truncated": False}]))
+    annotation_records.sync_snapshots(store, SimpleNamespace(source_id="synthetic", annotations=[]))
+    comparisons.initialize(store)
+    # Create a valid two-paper matrix, then simulate one source being removed.
+    with store.connect() as db:
+        db.execute("INSERT INTO items VALUES(?,?,?,?,?,?,?)", ("synthetic:gone", "synthetic", "gone",
+                   "Synthetic removed source", "journalArticle", "{}", "fixture"))
+        store.add_chunk(db, item_id="synthetic:gone", text="Synthetic removed evidence", kind="metadata")
+        rows = db.execute("SELECT * FROM chunks ORDER BY id").fetchall()
+        selections = [{"chunk_id": row["id"], "digest": fingerprint(row)} for row in rows]
+    board = comparisons.create(store, "Synthetic retained comparison", selections)
+    board["cells"]["P1"]["question"] = {"text": "Retained synthetic comparison", "citations": ["S1"], "reviewed": True}
+    comparisons.save(store, board["id"], board["revision"], board["title"], board["cells"])
+    with store.connect() as db:
+        db.execute("DELETE FROM items WHERE id='synthetic:gone'")
 
 
 def check_upgrade_fixture(directory, store):
@@ -64,4 +90,13 @@ def check_upgrade_fixture(directory, store):
         identity = profiles.list()["profiles"][0]["id"]
         assert profiles.key(profiles.get(identity)) == "synthetic-smoke-secret"
         assert (directory / marker["backup"] / "ai-profiles.json").read_bytes() == profiles.path.read_bytes()
-    return {"data_inherited": True, "snapshot_verified": True, "from_version": "0.3.0"}
+    retained = annotation_records.records(store, include_missing=True)
+    assert retained["records"][0]["text"] == "Retained synthetic annotation"
+    board = comparisons.get(store, comparisons.list_boards(store)[0]["id"])
+    assert board["cells"]["P1"]["question"]["text"] == "Retained synthetic comparison"
+    assert not board["sources"][1]["current"]
+    with sqlite3.connect(directory / marker["backup"] / "library.sqlite3") as db:
+        assert db.execute("SELECT count(*) FROM zotero_annotations").fetchone()[0] == 1
+        assert db.execute("SELECT count(*) FROM literature_comparisons").fetchone()[0] == 1
+    return {"data_inherited": True, "snapshot_verified": True, "from_version": "0.3.0",
+            "comparison_inherited": True, "annotation_snapshot_inherited": True}

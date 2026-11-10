@@ -68,3 +68,7 @@ Windows 一键升级依据 [GitHub Releases](https://docs.github.com/en/rest/rel
 后续优先评估人工标注的回答正确性与引用支持评测、适合大库的索引优化和结构化文献比较。自动代理、云端全文索引、自动改写已保存笔记与无审查批量分析本轮未实现。
 
 补充检查了 [PaperQA2](https://github.com/Future-House/paper-qa)、[Zotero Better Notes](https://github.com/windingwind/zotero-better-notes) 和 [Open WebUI 的本机／云端连接文档](https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/)。PaperQA2 将文献检索、片段证据选择和回答分开，并提供可复现实验入口；下一阶段应借鉴其评测思路，用社会学问题检验答案和出处支持，不照搬其科学问答成绩。Better Notes 的笔记关系、批注转笔记和 Markdown 交换值得用于后续阅读积累整合，本版尚未接入其插件 API 或实现双向同步。Open WebUI 区分模型连接及实际推理位置，进一步支持本项目把服务地址与模型 ID 分开、允许多个连接及手动填写模型；没有引入其部署栈、流式聊天或自动模型发现。
+
+## 0.6 将三项研究工具落地
+
+相似推荐采用可解释的本机书目特征和可选已有语义索引，不引入新的云端排序服务。批注参考 Better Notes 的摘录与阅读记录衔接思路，实际接入依据 Zotero 官方 Local API 和批注字段，不调用该插件或写回源库。结构化比较保留 PaperQA2 式的“检索／证据／回答分开”思想，但由使用者选择材料，先建立可手工编辑的六维表，再可选 AI 提取，草稿另存而不覆盖原表。三个功能、上限及未完成的质量评测见 [阅读工具说明](reading-tools.md)；没有复制这些项目代码。

@@ -32,8 +32,10 @@ JSON 备用入口支持 CSL JSON（仅元数据）和包含 `items`、Zotero 字
 
 ## MVP 范围与待验证事项
 
-- 当前接入个人库 `users/0`，暂未提供群组库、集合筛选、Zotero 写回、自动 OCR 或浏览器插件。
+- 当前接入个人库 `users/0`，语义试点可按集合限定，提供手动 Windows OCR；暂未提供群组库、Zotero 写回或自动扫描全部 PDF。
 - 若旧版 Zotero 不返回实例标识，来源由回环地址与 `legacy_namespace` 标识；切换旧版数据库时须更换 namespace，以免混合不同库。
 - 本机 PDF 缺失或越出许可目录会报告提示，不会改动 Zotero，也不会主动去网络寻找全文。
 - 元数据导入与 PDF 路径解析已有离线测试；不同 Zotero 版本、用户实际目录及超大库仍需首次本机接入验收。未宣称已完成真实库兼容性测试。
 - Zotero 10 按页读取完整元数据并检验库版本，旧版回退单次快照；尚未使用 Zotero 10 的 `since=` 优化请求量。PDF 内容未变时复用索引，已完成的文件可在中断后复用。
+
+0.6 读取完整 `/users/0/items` 快照中的 PDF annotation 对象。官方[修复 #4337](https://github.com/zotero/zotero/pull/4337)使 Local API 能包含批注；使用 parentItem 关联 PDF 附件及文献，零起算 pageIndex 转为 PDF 页序。摘录、个人评论和无文字图像批注分别处理，缺失来源只停用派生索引，独立快照和笔记保留。单页和分页快照均在存在本地库版本时做结束复核。旧 API 空列表不证明不存在批注；详细范围及实测边界见 [阅读工具](reading-tools.md)。

@@ -65,6 +65,7 @@ class Store:
             "INSERT INTO chunks(item_id,file_id,page,page_label,ordinal,kind,text) VALUES(?,?,?,?,?,?,?)",
             (item_id, file_id, page, page_label, ordinal, kind, text))
         db.execute("INSERT INTO chunks_fts(rowid,tokens) VALUES(?,?)", (cursor.lastrowid, " ".join(terms(text))))
+        return cursor.lastrowid
 
     def state(self, key, default=None):
         with self.connect() as db:

@@ -38,6 +38,7 @@ class Snapshot:
     attachments: list[Attachment]
     complete: bool
     warnings: list[str] = field(default_factory=list)
+    annotations: list[dict] | None = None
 
 
 def _roots(values: Iterable[str | Path]) -> list[Path]:
@@ -296,11 +297,12 @@ class ZoteroClient:
                     raise ZoteroError("Zotero 未返回完整文献列表；请重试。")
             except ValueError as exc:
                 raise ZoteroError("Zotero 返回无效文献总数，未执行导入。") from exc
-        snapshot = Snapshot(self.source_id(server_id), [], [], True)
+        snapshot = Snapshot(self.source_id(server_id), [], [], True, annotations=[])
         if not server_id:
             snapshot.warnings.append("本机 Zotero 未返回实例标识；切换旧版 Zotero 数据库时请更换 legacy_namespace。")
         seen: set[str] = set()
         attachment_data = []
+        annotation_data = []
         for record in records:
             if not isinstance(record, dict) or not isinstance(record.get("data"), dict):
                 raise ZoteroError("Zotero 条目格式不完整，未执行导入。")
@@ -317,8 +319,18 @@ class ZoteroClient:
                     attachment_data.append((key, data))
                     if not data.get("parentItem"):
                         snapshot.items.append(_normalized(data, key))
-            elif kind != "annotation":
+            elif kind == "annotation":
+                annotation_data.append((key, data))
+            else:
                 snapshot.items.append(_normalized(data, key))
+        from .annotations import normalize
+        attachment_map = dict(attachment_data)
+        for key, data in annotation_data:
+            annotation = normalize(data, key, attachment_map)
+            if annotation:
+                snapshot.annotations.append(annotation)
+            else:
+                snapshot.warnings.append(f"批注 {key} 的 PDF 附件不可用，本次未关联。")
         item_keys = {item["key"] for item in snapshot.items}
         for position, (key, data) in enumerate(attachment_data, 1):
             parent = str(data.get("parentItem") or key)
@@ -339,7 +351,7 @@ class ZoteroClient:
             if warning:
                 snapshot.warnings.append(f"附件 {key}：{warning}")
             self.progress("attachment_paths", position, len(attachment_data))
-        if next_page and server_id and library_version:
+        if server_id and library_version:
             final = self._get("/users/0/items?format=versions&limit=1", server_id)
             if (final.status_code != 200 or final.headers.get("Last-Modified-Version") != library_version
                     or final.headers.get("Total-Results") != total):
@@ -380,6 +392,9 @@ def load_export(path: str | Path, allowed_roots: Iterable[str | Path] = ()) -> S
             raise ZoteroError("导出文件包含重复条目标识。")
         seen.add(key)
         if data.get("deleted") or data.get("inTrash"):
+            continue
+        if data.get("itemType") == "annotation":
+            snapshot.warnings.append("JSON 导出中的独立批注对象未作为普通文献导入；请使用本机 API 同步 PDF 批注。")
             continue
         snapshot.items.append(_normalized(data, key))
         for number, attachment in enumerate(data.get("attachments", []) or []):
