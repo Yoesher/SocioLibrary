@@ -72,6 +72,8 @@ def main():
         previous_scope = store.state("semantic_scope")
         if isinstance(previous_scope, dict) and previous_scope.get("label"):
             config.setdefault("semantic", {})["collection_keywords"] = previous_scope["label"].split("、")
+    from .subscriptions import apply_feeds
+    apply_feeds(store, config)
     if args.update_journals:
         from .scheduler import discover_due
         discover_due(store, config)

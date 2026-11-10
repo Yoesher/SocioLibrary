@@ -312,6 +312,12 @@ def _rss(client: httpx.Client, subscription: dict, since: date, until: date,
         raise DiscoveryError("RSS is invalid XML or contains unsafe XML entities") from None
     if root.tag.rsplit("}", 1)[-1].lower() not in {"rss", "feed", "rdf"}:
         raise DiscoveryError("RSS URL returned a document that is not an RSS/Atom feed")
+    required = subscription.get("required_feed_title")
+    if required:
+        channel = next((e for e in root if e.tag.rsplit("}", 1)[-1] == "channel"), root)
+        title = next(("".join(e.itertext()) for e in channel if e.tag.rsplit("}", 1)[-1] == "title"), "")
+        if required not in _text(title):
+            raise DiscoveryError("RSS 频道名称与所选期刊不匹配，未保存订阅。")
     output = []
     entries = [element for element in root.iter() if element.tag.rsplit("}", 1)[-1] in {"item", "entry"}]
     for entry in entries:

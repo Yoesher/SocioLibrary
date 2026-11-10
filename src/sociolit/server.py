@@ -13,12 +13,16 @@ from filelock import FileLock, Timeout
 from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from . import research
 from .config import allowed_roots
 from .jobs import Jobs
+from .ocr import initialize as initialize_ocr
+from .ocr import process_ocr, windows_ocr
 from .preferences import apply_preferences, save_preferences
 from .scope import active_scope
 from .semantic import LocalEmbedder, search_vectors
 from .service import build_configured_embeddings, sync_zotero
+from .subscriptions import apply_feeds, configure_feed
 
 
 class Query(BaseModel):
@@ -33,7 +37,33 @@ class Preferences(BaseModel):
     collection_keywords: list[str] = Field(default_factory=list, max_length=30)
 
 
+class SavedSearch(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    query: Query
+
+
+class ReadingNote(BaseModel):
+    id: str | None = Field(default=None, max_length=64)
+    title: str = Field(min_length=1, max_length=300)
+    body: str = Field(min_length=1, max_length=20000)
+    source_chunk_id: int | None = None
+
+
+class FeedSettings(BaseModel):
+    name: str = Field(max_length=100)
+    url: str = Field(max_length=2000)
+    enabled: bool = True
+
+
+class OCRSettings(BaseModel):
+    language: str = Field(default="zh-Hans-CN", max_length=30, pattern=r"^[a-zA-Z0-9-]+$")
+    max_pages: int = Field(default=20, ge=1, le=100)
+
+
 def create_app(store, config):
+    research.initialize(store)
+    initialize_ocr(store)
+    apply_feeds(store, config)
     apply_preferences(config, store.directory)
     app = FastAPI(title="SocioLibrary", docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
@@ -135,7 +165,72 @@ def create_app(store, config):
                 "semantic_scope": scope_label, "semantic_progress": scope_progress, "library_busy": library_busy,
                 "journals": journals, "job": jobs.snapshot(), "version": __import__("sociolit").__version__,
                 "pdf_roots": [str(p) for p in allowed_roots(config)],
-                "collection_keywords": config.get("semantic", {}).get("collection_keywords", [])}
+                "collection_keywords": config.get("semantic", {}).get("collection_keywords", []),
+                "ocr_pages": store.state("ocr_summary", {}).get("pages", 0)}
+
+    @app.get("/api/research")
+    def research_records(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        return {"searches": research.list_records(store, "searches"), "notes": research.list_records(store, "notes")}
+
+    @app.post("/api/research/searches")
+    def save_search(body: SavedSearch, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        if body.query.mode not in ("fulltext", "semantic", "hybrid"):
+            raise HTTPException(400, "不支持的检索方式。")
+        return {"id": research.save_search(store, body.name, body.query.model_dump())}
+
+    @app.post("/api/research/notes")
+    def save_note(body: ReadingNote, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        source = {}
+        with store.connect() as db:
+            if body.id:
+                old = db.execute("SELECT source_json FROM reading_notes WHERE id=?", (body.id,)).fetchone()
+                if not old:
+                    raise HTTPException(404, "笔记不存在。")
+                source = json.loads(old[0])
+            elif body.source_chunk_id is not None:
+                row = db.execute("""SELECT c.*,i.title FROM chunks c JOIN items i ON i.id=c.item_id
+                    WHERE c.id=?""", (body.source_chunk_id,)).fetchone()
+                if not row:
+                    raise HTTPException(404, "来源片段已变化，请重新检索后保存。")
+                source = {k: row[k] for k in ("item_id", "file_id", "title", "page", "page_label", "kind", "text")}
+                source["chunk_id"] = row["id"]
+        return {"id": research.save_note(store, body.title, body.body, source, body.id)}
+
+    @app.post("/api/research/notes/{identity}/archive")
+    def archive_note(identity: str, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        with store.connect() as db:
+            db.execute("UPDATE reading_notes SET archived=1-archived WHERE id=?", (identity,))
+        return {"saved": True}
+
+    @app.post("/api/ocr/languages")
+    def ocr_languages(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        try:
+            return windows_ocr({"action": "languages"})
+        except (RuntimeError, OSError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @app.post("/api/subscriptions/{name}/pause")
+    def pause_subscription(name: str, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        def pause():
+            saved = store.state("journal-feed:" + name)
+            if not saved:
+                raise ValueError("该期刊尚未配置自定义 RSS。")
+            saved["enabled"] = False
+            store.set_state("journal-feed:" + name, saved)
+            apply_feeds(store, config)
+            return {"saved": True}
+        return mutate(pause)
+
+    @app.post("/api/subscriptions")
+    def subscription(body: FeedSettings, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        return mutate(lambda: configure_feed(store, config, body.name, body.url, body.enabled))
 
     @app.post("/api/zotero/check")
     def check_zotero(x_sociolit_token: str | None = Header(default=None)):
@@ -162,11 +257,17 @@ def create_app(store, config):
         return mutate(save)
 
     @app.post("/api/jobs/{action}")
-    def start_job(action: str, x_sociolit_token: str | None = Header(default=None)):
+    def start_job(action: str, body: OCRSettings | None = None, x_sociolit_token: str | None = Header(default=None)):
         authorize(x_sociolit_token)
         from .scheduler import discover_due
         from .semantic import prepare_model
+        body = body or OCRSettings()
+        def ocr_run(progress):
+            result = process_ocr(store, allowed_roots(config), body.language, max_pages=body.max_pages, progress=progress)
+            store.set_state("ocr_summary", result)
+            return result
         actions = {
+            "ocr": lambda progress: mutate(lambda: ocr_run(progress)),
             "import": lambda progress: mutate(lambda: sync_zotero(store, config, progress=progress)),
             "embed": lambda progress: mutate(lambda: build_configured_embeddings(store, config, embedder(), progress=progress)),
             "discover": lambda progress: mutate(lambda: discover_due(store, config, force=True)),
