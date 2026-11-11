@@ -3,6 +3,7 @@
 ## 使用软件
 
 - [Windows 安装、使用与升级](windows.md)
+- [动态文献图谱与逐步探索](v0.10-graph-explorer.md)
 - [界面风格与配色](v0.9-design-systems.md)
 - [文献检索、分页与 Zotero 定位](v0.8-search-and-design.md)
 - [推荐、批注与文献比较](reading-tools.md)

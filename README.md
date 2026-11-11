@@ -8,12 +8,12 @@
 
 ## 下载与升级
 
-当前正式版 **0.9.0**，支持 **Windows 10 / 11 x64**。软件自带运行环境，直接安装即可使用。
+当前正式版 **0.10.0**，支持 **Windows 10 / 11 x64**。软件自带运行环境，直接安装即可使用。
 
 | 选择 | 下载 | 适合谁 |
 | --- | --- | --- |
-| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.9.0/SocioLibrary-0.9.0-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
-| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.9.0/SocioLibrary-0.9.0-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
+| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.10.0/SocioLibrary-0.10.0-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
+| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.10.0/SocioLibrary-0.10.0-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
 
 已有版本可以进入 **软件更新 → 检查更新 → 下载并升级**，也可以关闭软件后运行安装包覆盖升级。原资料库、模型、笔记和设置沿用，升级前先生成本机快照。[升级与恢复](docs/windows.md#资料升级与退出) · [版本说明与校验文件](https://github.com/Yoesher/SocioLibrary/releases/latest)
 
@@ -25,10 +25,21 @@
 | 查找研究 | 中文检索英文文献；字词、语义与混合检索；按作者、年份筛选 |
 | 回到原文 | 每篇论文展示来源摘要、与查询的关系和正文命中页；点击在 Zotero 打开对应附件页 |
 | 阅读与比较 | 收藏、阅读清单、带出处笔记；相似文献推荐；六维文献对照及导出 |
-| 发现关联 | 主题图谱、邻居高亮、关系依据和人工连线；图谱与检索、文献详情互相跳转 |
+| 发现关联 | 动态舒展、原位展开、探索返回、来源筛选与可点击概览；图谱与阅读互相跳转 |
 | 按需使用 AI | 配置自己的 API 连接，逐次预览并确认材料后提问、归纳、翻译或提取比较草稿 |
 
 个人文献、PDF、笔记、索引和密钥保存在本机。全文检索和规则整理可以独立运行；语义检索使用另行下载的本地模型，云端 AI 由你按次决定是否发送材料。[AI 与资料说明](docs/ai.md) · [导入与同步说明](docs/zotero-research.md)
+
+## 动态文献图谱
+
+**0.10.0：从一篇文献出发，沿着线索继续探索。**
+
+- 每次原位展开最多8篇关联，拖动固定节点，随时暂停动态。
+- 在动态网络、同心关系和年代脉络之间切换，用概览和图内定位找到目标。
+- 按关系来源筛选，查看每条依据；双击进入论文详情，再返回原图。
+- 返回/前进恢复本次会话的位置、视角、选中文献和固定状态。
+
+单视图最多80篇，可选择新中心继续探索；自动连线是需要核对的阅读线索。位置与历史仅保留在本次打开中。[图谱使用说明与来源](docs/v0.10-graph-explorer.md)
 
 ## 三套风格，一整个工作台
 
