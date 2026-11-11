@@ -67,6 +67,7 @@ jobs:
                   print(json.dumps(value))
                   assert value['ok'] and tag[1:] in value['version']
               except Exception:
+                  if (data / result).exists(): print((data / result).read_text())
                   log = data / 'logs/desktop.log'
                   if log.exists(): print(log.read_text()[-12000:])
                   raise

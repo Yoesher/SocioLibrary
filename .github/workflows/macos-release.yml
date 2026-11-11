@@ -47,6 +47,7 @@ jobs:
                   subprocess.run([exe, flag, '--data-dir', str(data)], timeout=180, check=True)
                   value = json.loads((data / result).read_text())
               except Exception:
+                  if (data / result).exists(): print((data / result).read_text())
                   log = data / 'logs/desktop.log'
                   if log.exists(): print(log.read_text()[-12000:])
                   raise

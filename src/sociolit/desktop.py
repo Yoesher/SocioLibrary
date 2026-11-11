@@ -400,36 +400,28 @@ def main():
             except RuntimeError:
                 pass
         if args.gui_smoke_test:
-            def gui_smoke_result(value):
-                from .update_install import native_install_context
-                value = value if isinstance(value, dict) else {}
-                result = {key: value.get(key) for key in ('version', 'notebooks', 'inbox', 'native_bridge')}
-                result['ok'] = (__version__ in str(result['version'])
-                                and result['notebooks'] is True and result['inbox'] is True
-                                and result['native_bridge'] == native_install_context()['mode'])
-                (directory / 'gui-smoke-result.json').write_text(json.dumps(result), encoding='utf-8')
-                bridge._window.confirm_close = False
-                bridge._window.destroy()
-            bridge._window.expose(gui_smoke_result)
             def gui_check():
-                # Also exercise a native API promise, rather than only detecting DOM elements.
-                bridge._window.run_js("""(function () {
-                    let attempts = 0;
-                    const timer = setInterval(function () {
-                        const version = document.getElementById('version');
-                        if (!window.pywebview || !window.pywebview.api.gui_smoke_result) return;
-                        if ((!version || !version.textContent) && ++attempts < 100) return;
-                        clearInterval(timer);
-                        window.pywebview.api.update_context().then(function (context) {
-                            window.pywebview.api.gui_smoke_result({
-                                version: version ? version.textContent : '',
-                                notebooks: !!document.getElementById('graph-view-save'),
-                                inbox: !!document.getElementById('journal-inbox-form'),
-                                native_bridge: context.mode
-                            });
-                        });
-                    }, 100);
-                })();""")
+                from .update_install import native_install_context
+                value = {'ok': False}
+                try:
+                    # Closing inside a native callback can strand WebKit's pending
+                    # return-value worker. Wait until its promise has resolved.
+                    bridge._window.run_js("window.pywebview.api.update_context().then(function(c){window.__sociolitSmokeContext=c.mode;}).catch(function(){window.__sociolitSmokeContext='error';});")
+                    for _ in range(200):
+                        value = bridge._window.evaluate_js("({version:document.getElementById('version').textContent, notebooks:!!document.getElementById('graph-view-save'), inbox:!!document.getElementById('journal-inbox-form'), native_bridge:window.__sociolitSmokeContext||''})")
+                        if isinstance(value, dict) and value.get('native_bridge') and value.get('version'):
+                            break
+                        time.sleep(.05)
+                    value['ok'] = (__version__ in str(value.get('version'))
+                                   and value.get('notebooks') is True and value.get('inbox') is True
+                                   and value.get('native_bridge') == native_install_context()['mode'])
+                except Exception as exc:
+                    logging.exception('Native GUI check failed')
+                    value = {'ok': False, 'error_type': type(exc).__name__}
+                finally:
+                    (directory / 'gui-smoke-result.json').write_text(json.dumps(value), encoding='utf-8')
+                    bridge._window.confirm_close = False
+                    bridge._window.destroy()
             bridge._window.events.loaded += gui_check
         else:
             bridge._window.events.loaded += start_updates
