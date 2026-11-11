@@ -31,7 +31,10 @@ jobs:
         run: |
           $data = Join-Path $env:RUNNER_TEMP 'sociolit-frozen-smoke'
           $process = Start-Process -FilePath ./dist/SocioLibrary/SocioLibrary.exe -ArgumentList @('--smoke-test','--data-dir',$data) -PassThru -WindowStyle Hidden
-          if (-not $process.WaitForExit(180000)) { throw 'Frozen smoke test timed out' }
+          if (-not $process.WaitForExit(180000)) {
+            if (Test-Path "$data/logs/desktop.log") { Get-Content "$data/logs/desktop.log" -Tail 60 }
+            throw 'Frozen smoke test timed out'
+          }
           if ($process.ExitCode -ne 0 -or -not (Test-Path "$data/smoke-result.json")) {
             if (Test-Path "$data/logs/desktop.log") { Get-Content "$data/logs/desktop.log" -Tail 60 }
             throw 'Frozen smoke test failed'

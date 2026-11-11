@@ -59,6 +59,18 @@ def test_automatic_ids_are_stable_across_different_views(network):
             assert e['id'] == mapping[key]
 
 
+def test_expansion_preserves_a_removed_manual_neighbor_snapshot(network):
+    graph.create_link(network, 'synthetic:0', 'synthetic:orphan1', 'theory', 'Verified retained snapshot')
+    with network.connect() as db:
+        db.execute("DELETE FROM items WHERE id='synthetic:orphan1'")
+    result = graph.expand_neighbors(network, 'synthetic:0', ['synthetic:0'], include_auto=False)
+    assert result['added_ids'] == ['synthetic:orphan1']
+    removed = next(n for n in result['nodes'] if n['id'] == 'synthetic:orphan1')
+    assert not removed['current'] and removed['title'] == '000 unrelated isolate 1'
+    assert len(result['edges']) == 1 and result['edges'][0]['origin'] == 'manual'
+    assert result['edges'][0]['note'] == 'Verified retained snapshot'
+
+
 def test_expand_api_authorization_bounds_and_manual_only(network):
     with TestClient(create_app(network, {}), base_url='http://localhost') as client:
         value = {'seed': 'synthetic:0', 'known_ids': ['synthetic:0'], 'include_auto': False}

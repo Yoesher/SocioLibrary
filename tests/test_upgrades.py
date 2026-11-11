@@ -67,7 +67,13 @@ def test_upgrade_inherits_every_research_table_preferences_model_and_does_not_re
     with sqlite3.connect(backup / "library.sqlite3") as snapshot:
         assert list(snapshot.iterdump()) == original
     with TestClient(app, base_url="http://localhost") as client:
-        assert client.get("/api/status").json()["upgrade"]["backup_ready"]
+        status = client.get("/api/status").json()
+        assert status["upgrade"]["backup_ready"]
+        expanded = client.post('/api/graph/expand', headers={'X-Sociolit-Token': status['token']},
+                               json={'seed': 'synthetic:item', 'known_ids': ['synthetic:item'],
+                                     'include_auto': False})
+        assert expanded.status_code == 200 and expanded.json()['added_ids'] == ['synthetic:gone']
+        assert any(n['id'] == 'synthetic:gone' and not n['current'] for n in expanded.json()['nodes'])
     initialize_desktop_library(tmp_path)
     assert list((tmp_path / "backups").iterdir()) == [backup]
 

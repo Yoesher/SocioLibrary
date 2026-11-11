@@ -302,7 +302,8 @@ def main():
                 expansion = client.post(url + '/api/graph/expand',
                     headers={'X-Sociolit-Token': status['token']},
                     json={'seed': 'synthetic:item', 'known_ids': ['synthetic:item'], 'include_auto': False})
-                assert expansion.status_code == 200 and expansion.json()['added_ids'] == []
+                assert expansion.status_code == 200 and expansion.json()['added_ids'] == ['synthetic:gone']
+                assert any(n['id'] == 'synthetic:gone' and not n['current'] for n in expansion.json()['nodes'])
                 assert client.get(url + '/api/appearance', headers={'X-Sociolit-Token': status['token']}).json()['design'] == 'apple'
                 assert len(client.get(url + "/api/comparisons", headers={"X-Sociolit-Token": status["token"]}).json()) == 1
                 assert client.get(url + "/api/annotations?include_missing=true",
