@@ -8,16 +8,16 @@
 
 ## 下载与升级
 
-当前正式版 **0.12.0**，支持 **Windows 10 / 11 x64**，另提供 **macOS 15+ 预览版**。软件自带运行环境，直接安装即可使用。
+当前正式版 **0.12.1**，支持 **Windows 10 / 11 x64**，另提供 **macOS 15+ 预览版**。软件自带运行环境，直接安装即可使用。
 
 | 选择 | 下载 | 适合谁 |
 | --- | --- | --- |
-| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.0/SocioLibrary-0.12.0-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
-| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.0/SocioLibrary-0.12.0-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
+| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.1/SocioLibrary-0.12.1-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
+| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.1/SocioLibrary-0.12.1-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
 
-Windows 已有版本可以进入 **软件更新 → 检查更新 → 下载并升级**，也可以关闭软件后运行安装包覆盖升级。原资料库、模型、笔记和设置沿用，升级前先生成本机快照。[升级与恢复](docs/windows.md#资料升级与退出) · [版本说明与校验文件](https://github.com/Yoesher/SocioLibrary/releases/latest)
+Windows 已有版本可以进入 **软件更新 → 检查更新 → 下载并升级**，也可以关闭软件后运行安装包覆盖升级。原资料库、模型、笔记和设置沿用，升级前先生成本机快照。0.12.1 可以先下载，再按具体待办保存内容后安装；设置中可核对实际资料目录。[升级与恢复](docs/windows.md#资料升级与退出) · [版本说明与校验文件](https://github.com/Yoesher/SocioLibrary/releases/latest)
 
-Mac 预览版：[Apple 芯片 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.0/SocioLibrary-0.12.0-macOS-arm64.zip) · [Intel ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.0/SocioLibrary-0.12.0-macOS-x86_64.zip)。尚未 Apple 公证；Intel 版暂不附带本地语义运行环境，Mac 扫描页 OCR 和自动替换应用尚未提供。[Mac 安装与范围](docs/macos.md)
+Mac 预览版：[Apple 芯片 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.1/SocioLibrary-0.12.1-macOS-arm64.zip) · [Intel ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.1/SocioLibrary-0.12.1-macOS-x86_64.zip)。尚未 Apple 公证；Intel 版暂不附带本地语义运行环境，Mac 扫描页 OCR 和自动替换应用尚未提供。[Mac 安装与范围](docs/macos.md)
 
 ## 用它做什么
 
