@@ -4,7 +4,7 @@
 
 ## 安装与升级
 
-从本项目 Releases 下载对应芯片的 DMG 或 ZIP。DMG 中拖动 SocioLibrary.app 到 Applications；ZIP 完整解压后移动整个应用。先退出旧版，再替换应用。请保留原资料目录，不需要重新导入旧库。
+从本项目 Releases 下载对应芯片的 ZIP，完整解压后将 SocioLibrary.app 移动到 Applications。先退出旧版，再替换应用。请保留原资料目录，不需要重新导入旧库。
 
 研究资料默认位于 `~/Library/Application Support/SocioLit`；记忆目录指针在 `~/Library/Application Support/SocioLibrary`。程序替换与资料目录分离；首次打开新版本先建立本机升级快照。卸载应用不会自动删除研究目录。请另行备份原 PDF 和完整资料。
 

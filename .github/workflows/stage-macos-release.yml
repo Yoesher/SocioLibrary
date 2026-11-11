@@ -37,10 +37,10 @@ jobs:
           version=tag[1:]
           for arch in ('arm64','x86_64'):
               folder=Path('artifacts')/arch
-              expected={f'SocioLibrary-{version}-macOS-{arch}.{ext}' for ext in ('zip','dmg')}
+              expected={f'SocioLibrary-{version}-macOS-{arch}.{ext}' for ext in ('zip',)}
               assert {p.name for p in folder.iterdir()} == expected|{f'SHA256SUMS-macOS-{arch}.txt'}
               lines=(folder/f'SHA256SUMS-macOS-{arch}.txt').read_text().splitlines()
-              assert len(lines)==2
+              assert len(lines)==1
               checked=set()
               for line in lines:
                   digest,name=line.split('  ',1)

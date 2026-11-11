@@ -1,4 +1,4 @@
-"""Build a native, ad-hoc-signed preview .app/ZIP/DMG on a disposable macOS runner."""
+"""Build a native, ad-hoc-signed preview .app/ZIP on a disposable macOS runner."""
 import hashlib
 import importlib.util
 import os
@@ -55,15 +55,8 @@ output = Path('release-dist')
 output.mkdir(exist_ok=True)
 stem = f'SocioLibrary-{version}-macOS-{arch}'
 subprocess.run(['/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(output / (stem+'.zip'))], check=True)
-stage = Path('build/macos-dmg')
-stage.mkdir(exist_ok=True)
-shutil.copytree(app, stage / 'SocioLibrary.app', symlinks=True, dirs_exist_ok=True)
-(stage / 'Applications').symlink_to('/Applications', target_is_directory=True)
-(stage / 'README.txt').write_text('SocioLibrary macOS 预览版\n拖动应用到 Applications。升级前退出旧版再替换应用；资料在 ~/Library/Application Support/SocioLit。\n本构建仅作本机临时签名，尚无 Developer ID 签名及 Apple 公证；不能保证通过系统分发检查，请勿关闭系统安全设置。\nIntel 预览版不附带本地语义模型运行环境；扫描页OCR目前仅Windows提供。\n', encoding='utf-8')
-subprocess.run(['/usr/bin/hdiutil', 'create', '-volname', 'SocioLibrary', '-srcfolder', str(stage),
-                '-ov', '-format', 'UDZO', str(output / (stem+'.dmg'))], check=True)
 lines = []
-for suffix in ('zip', 'dmg'):
+for suffix in ('zip',):
     path = output / (stem+'.'+suffix)
     lines.append(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+path.name)
 (output / f'SHA256SUMS-macOS-{arch}.txt').write_text('\n'.join(lines)+'\n', encoding='ascii')
