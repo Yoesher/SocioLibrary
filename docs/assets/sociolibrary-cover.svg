@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
+<title id="title">SocioLibrary</title><desc id="desc">Windows 本地文献工作台，Apple、Windows、Material 三套界面风格示意。</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#edf4ff"/><stop offset="1" stop-color="#f7f6fb"/></linearGradient></defs>
+<rect width="1200" height="340" rx="24" fill="url(#bg)"/>
+<g font-family="Segoe UI,Microsoft YaHei,sans-serif"><rect x="40" y="40" width="44" height="44" rx="13" fill="#086ad8"/><text x="62" y="72" text-anchor="middle" font-size="31" font-weight="700" fill="white">S</text><text x="99" y="72" font-size="34" font-weight="650" fill="#172439">SocioLibrary</text>
+<text x="40" y="132" font-size="28" font-weight="600" fill="#172439">让文献，从收藏走向研究。</text>
+<text x="40" y="172" font-size="17" fill="#5f6f84">本地优先的 Windows 文献工作台</text>
+<text x="40" y="239" font-size="15" fill="#38618e">Zotero · 中英检索 · 阅读与比较</text>
+<text x="40" y="278" font-size="13" fill="#7a8799">三套完整风格，独立配色。</text>
+
+<g transform="translate(507 67)"><rect width="201" height="183" rx="14" fill="#f1f5fc" stroke="#d9e1ed"/>
+<rect x="7" y="8" width="48" height="167" rx="10" fill="#ffffff"/><rect x="63" y="8" width="130" height="21" rx="8" fill="white"/>
+<rect x="13" y="42" width="35" height="4" rx="4" fill="#b7c3d4"/>
+<rect x="13" y="66" width="35" height="9" rx="4" fill="#1478e4"/>
+<rect x="13" y="90" width="35" height="4" rx="4" fill="#b7c3d4"/>
+<rect x="13" y="114" width="35" height="4" rx="4" fill="#b7c3d4"/>
+<rect x="13" y="138" width="35" height="4" rx="4" fill="#b7c3d4"/>
+<rect x="63" y="40" width="127" height="123" rx="10" fill="white"/>
+<rect x="73" y="53" width="67" height="6" rx="2" fill="#728399"/>
+<rect x="73" y="75" width="98" height="4" rx="2" fill="#d7dee8"/>
+<rect x="73" y="88" width="89" height="4" rx="2" fill="#d7dee8"/>
+<rect x="73" y="101" width="94" height="4" rx="2" fill="#d7dee8"/>
+<rect x="73" y="126" width="73" height="21" rx="10" fill="#1478e4" opacity=".15"/><text x="100" y="216" text-anchor="middle" font-size="16" font-weight="600" fill="#465469">Apple</text></g>
+<g transform="translate(727 67)"><rect width="201" height="183" rx="4" fill="#edf1f6" stroke="#d9e1ed"/>
+<path d="M0 4Q0 0 4 0H54V183H4Q0 183 0 179Z" fill="#e3e9f1"/><rect x="59" y="7" width="142" height="176" rx="5" fill="white" stroke="#d9e1ed"/>
+<rect x="7" y="42" width="41" height="4" rx="1" fill="#b7c3d4"/>
+<rect x="7" y="66" width="41" height="9" rx="1" fill="#1676ce"/>
+<rect x="7" y="90" width="41" height="4" rx="1" fill="#b7c3d4"/>
+<rect x="7" y="114" width="41" height="4" rx="1" fill="#b7c3d4"/>
+<rect x="7" y="138" width="41" height="4" rx="1" fill="#b7c3d4"/>
+<rect x="68" y="40" width="122" height="123" rx="2" fill="white"/>
+<rect x="78" y="53" width="67" height="6" rx="2" fill="#728399"/>
+<rect x="78" y="75" width="98" height="4" rx="2" fill="#d7dee8"/>
+<rect x="78" y="88" width="89" height="4" rx="2" fill="#d7dee8"/>
+<rect x="78" y="101" width="94" height="4" rx="2" fill="#d7dee8"/>
+<rect x="78" y="126" width="73" height="21" rx="3" fill="#1676ce" opacity=".15"/><text x="100" y="216" text-anchor="middle" font-size="16" font-weight="600" fill="#465469">Windows</text></g>
+<g transform="translate(947 67)"><rect width="201" height="183" rx="20" fill="#f4eff9" stroke="#d9e1ed"/>
+<rect x="6" y="7" width="28" height="169" rx="14" fill="#e8ddf3"/>
+<rect x="13" y="34" width="14" height="10" rx="5" fill="#b2a2c6"/>
+<rect x="13" y="58" width="14" height="10" rx="5" fill="#76569d"/>
+<rect x="13" y="82" width="14" height="10" rx="5" fill="#b2a2c6"/>
+<rect x="13" y="106" width="14" height="10" rx="5" fill="#b2a2c6"/>
+<rect x="13" y="130" width="14" height="10" rx="5" fill="#b2a2c6"/>
+<rect x="43" y="40" width="147" height="123" rx="17" fill="white"/>
+<rect x="53" y="53" width="67" height="6" rx="2" fill="#728399"/>
+<rect x="53" y="75" width="98" height="4" rx="2" fill="#d7dee8"/>
+<rect x="53" y="88" width="89" height="4" rx="2" fill="#d7dee8"/>
+<rect x="53" y="101" width="94" height="4" rx="2" fill="#d7dee8"/>
+<rect x="53" y="126" width="73" height="21" rx="10" fill="#76569d" opacity=".15"/><text x="100" y="216" text-anchor="middle" font-size="16" font-weight="600" fill="#465469">Material</text></g>
+</g></svg>

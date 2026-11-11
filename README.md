@@ -1,179 +1,79 @@
-# SocioLibrary · 本地优先的社会学文献知识库
+<p align="center">
+  <img src="docs/assets/sociolibrary-cover.svg" alt="SocioLibrary · Apple、Windows 与 Material 三套风格示意" width="1200">
+</p>
 
-项目包名与命令为 `sociolit`。这是可运行的 **0.9.0 Windows 桌面版**：Zotero 本地导入、按页全文检索、可选本地语义检索、期刊发现、中英跨语言检索、相似文献推荐、PDF 批注、结构化比较、文献关系图谱与多主题。个人文献、PDF、笔记和索引保存在本机；可选 AI 阅读或提取仅在逐次预览并确认后发送所选内容给配置的服务。
+<p align="center"><strong>让文献，从收藏走向研究。</strong><br>Windows 本地文献工作台 · Zotero 导入 · 中英检索 · 阅读与比较</p>
 
-**0.9 完整风格切换：**Apple 轻透工作台、Windows 高效工作区、Material 灵感空间三套设计，分别改变导航布局、工具栏、卡片、控件、字体层级、图谱节点和动效；配色独立调整。可即时预览、取消或保存；已有资料与设置沿用。见 [0.9 风格与来源](docs/v0.9-design-systems.md)。
+<p align="center"><a href="https://github.com/Yoesher/SocioLibrary/releases/latest"><strong>下载最新版</strong></a> · <a href="docs/windows.md">开始使用</a> · <a href="docs/README.md">使用文档</a> · <a href="https://github.com/Yoesher/SocioLibrary/issues">反馈问题</a></p>
 
-**0.8 检索与界面更新：**一篇论文一张卡片，展示来源摘要、与查询的关系及命中页；支持真实分页，原文主入口跳转 Zotero 对应附件页。图谱使用离线 Cytoscape.js，加入同心布局、邻居高亮和完整题名详情。全新分组侧栏、银白主题与返回导航，进入详情不丢失原检索。详见 [0.8 设计、来源与使用说明](docs/v0.8-search-and-design.md)。
+## 下载与升级
 
-**当前重要状态：**《社会》《人口研究》已接入官网的当期和过刊目录，只获取题名、作者、刊出日期与来源链接。适配器每次核验站点 robots.txt，遇到目录异常停止并提示；它不覆盖未收录在期刊目录中的网络首发论文。《社会学研究》《中国人口科学》已接入官网当期目录快照，仅获取题名、作者、年份和来源链接；未提供准确发表日，长期未运行可能漏掉中间期次。《社会学评论》《人口学刊》《中国社会科学》仍显示“来源待接入”。详见[逐刊核验](docs/discovery-research.md)。
+当前正式版 **0.9.0**，支持 **Windows 10 / 11 x64**。软件自带运行环境，直接安装即可使用。
 
-## Windows 软件下载
+| 选择 | 下载 | 适合谁 |
+| --- | --- | --- |
+| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.9.0/SocioLibrary-0.9.0-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
+| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.9.0/SocioLibrary-0.9.0-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
 
-本轮以 **Windows 10 / 11 x64 桌面软件** 为唯一发布目标。
+已有版本可以进入 **软件更新 → 检查更新 → 下载并升级**，也可以关闭软件后运行安装包覆盖升级。原资料库、模型、笔记和设置沿用，升级前先生成本机快照。[升级与恢复](docs/windows.md#资料升级与退出) · [版本说明与校验文件](https://github.com/Yoesher/SocioLibrary/releases/latest)
 
-打开 [软件下载页](https://github.com/Yoesher/SocioLibrary/releases)，选择 `Windows-x64-Setup.exe` 安装版，或完整解压 `Windows-x64-Portable.zip` 免安装版。软件包含运行环境，不需要安装 Python。语义模型首次单独下载。部分机器需先安装微软 WebView2 Runtime。
+## 用它做什么
 
-**已有旧版：**关闭软件，直接运行新版安装包即可覆盖升级，无需先卸载。安装器沿用原安装位置；首次启动自动继承原资料库、笔记、检索、OCR、模型和设置，并先备份数据库与设置。详情见 [升级与恢复](docs/windows.md#资料升级与退出)。
-
-**从 0.4.0 起：**软件内“软件更新”会自动检查正式版本，并支持一键下载、校验、退出安装和重新打开原库，也可选择稍后安装。0.3.x 尚无内置更新入口，需先安装一次当前新版。阅读清单支持待读、在读、已读与收藏；最近 20 次检索可再次使用；笔记与出处可导出到本机 Markdown 文件。
-
-**0.5 AI 接入：**在“AI 文献阅读”配置自己的 OpenAI / ChatGPT API 或其他服务。支持 Responses、OpenAI 兼容 Chat、Claude Messages 三种协议，可保留多个连接和模型，密钥使用 Windows 当前账号加密。检索结果可选片段，发送前预览、逐次确认，再提问、归纳、比较或翻译；答复带来源清单，可保存为待核对阅读笔记。默认不调用 AI，无需发送整库。配置示例、费用及兼容边界见 [AI 使用说明](docs/ai.md)。
-
-**0.6 研究阅读工具：**检索结果可查找相似文献并加入对照篮；同步 Zotero 时导入 PDF 批注，分清摘录和个人评论；创建六维对照表、关联来源、记录人工核对状态并导出 Markdown 或 CSV。AI 可按所选材料提取结构化草稿，另存新表，保留人工原表。推荐和手工比较无需 AI 账号。详见 [推荐、批注与文献比较](docs/reading-tools.md)。
-
-首次启动后，在“资料与设置”中选择 PDF 文件夹并测试 Zotero 连接，即可同步。支持后台任务进度、作者与年份筛选、全文/语义/混合检索、出处片段复制。详见 [Windows 使用说明](docs/windows.md) 与 [同类项目调研](docs/similar-projects.md)。下方命令行说明主要供开发者使用。
-
-## 获取项目
-
-```sh
-git clone https://github.com/Yoesher/SocioLibrary.git
-cd SocioLibrary
-```
-
-也可以在 GitHub 页面通过 **Code → Download ZIP** 下载并解压。
-
-## 快速启动（Windows）
-
-需要 Python 3.11 或更新版本。推荐 3.11–3.13；首次安装依赖需要联网。
-
-1. 在项目目录双击 `启动知识库.cmd`，或运行 `scripts/start.ps1`。它创建项目虚拟环境、安装程序、生成已忽略的 `config.local.toml` 并打开本地页面。
-2. 在 Zotero 的 **设置 → 高级 → 允许此计算机上的其他应用程序与 Zotero 通信** 中启用 Local API，保持 Zotero 运行。
-3. 只需配置一次 `config.local.toml`：将 `zotero.allowed_roots` 改为实际的 Zotero `storage` 目录，以及需要导入的链接 PDF 目录。例如 `allowed_roots = ["E:/ReferenceManager/storage", "E:/Research/Papers"]`。重启页面服务后点击 **一键导入 Zotero**。
-
-空的许可目录仍可导入书目信息，但不会读取任意 PDF。不会自动查找、复制或操作 Zotero 的 SQLite 数据库。附件需先由 Zotero 合法下载到本机；文件仍留在原处，项目仅保存路径和索引。
-
-如果系统不允许直接运行 PowerShell 脚本，可在终端逐步执行：
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e .
-Copy-Item config/local.example.toml config.local.toml
-# 编辑 config.local.toml，添加 PDF 许可目录。
-# 需要七刊登记信息时，把 config/public-journals.toml 的 [[journals]] 各段追加到本地配置。
-.\.venv\Scripts\python.exe -m sociolit serve --config config.local.toml --open-browser
-```
-
-当前只维护 Windows 发布包。本地服务地址为 `http://127.0.0.1:8765`，仅监听本机。
-
-## 本版已经实现
-
-| 功能 | 行为与边界 |
+| 工作 | 在软件中完成 |
 | --- | --- |
-| Zotero 一键导入 | 只读 Local API，读取条目、作者、摘要、标签、独立笔记、本地 PDF 和 PDF 批注文字；当前仅个人库 `users/0`，不含群组库 |
-| 安全增量 | 每次完整核对元数据；Zotero 10 按稳定库版本分页，旧版回退单次快照；按指纹与 PDF SHA-256 只重建有变化的索引；完整快照才清理本程序中的失效索引 |
-| 全文检索 | SQLite FTS5；英文词及中文单字/双字切分；查询词使用 AND，不支持任意 FTS 高级表达式 |
-| 来源定位 | 每段只属于一个 PDF 页；结果显示 1 起算的实际 PDF 页序和 PDF 文件页标签，点击在浏览器打开对应页；页标签不一定是刊物印刷页码 |
-| 语义检索 | 可选多语 E5 本地模型；向量增量存储，模型版本隔离，索引过期会明确提示；不向云端发送文献 |
-| 期刊发现 | Crossref/OpenAlex/RSS 元数据及已核验的单刊官方目录；分页、有限重试、DOI 去重、保守无 DOI 去重、元数据更正、失败来源状态 |
-| 月度更新 | 本地按来源保存成功日期；每日或启动时检查，当月成功则跳过，关机后可补查；生成新增/更新摘要并在页面提示 |
-| GitHub Actions | 可选月度公共元数据报告；默认门控关闭，运行无仓库写权限；不会访问或上传本地库 |
-| Windows OCR | 使用本机 Windows 文字识别组件，分批处理无文字层页面；保留实际页序，不改写原 PDF |
-| 保存检索 | 保存关键词、检索方式及作者/年份条件，可在当前资料库重新执行 |
-| 阅读笔记 | 新增、编辑、归档和恢复；来源摘录以快照保留，独立于 Zotero 条目删除 |
-| 阅读清单 | 待读、在读、已读、收藏和归档恢复；不改写 Zotero，来源移除后保留清单快照 |
-| 软件内更新 | 自动检查官方正式版，支持下载续传、大小与 SHA-256 校验、安装交接和重新打开原库 |
-| 相似文献 | 本机题名、摘要和标签推荐，或复用已有语义试点索引；解释推荐线索，不自动构建索引 |
-| Zotero 批注 | 摘录与个人评论分列，颜色、标签、有效页序；保留缺失来源快照，可另存笔记 |
-| 结构化文献比较 | 六维手工表、逐格出处及核对状态，归档恢复、Markdown/CSV 导出；可选 AI 草稿另存 |
+| 接入文献 | 通过 Zotero 本机接口只读导入书目、本地 PDF、笔记与批注；按变化增量更新 |
+| 查找研究 | 中文检索英文文献；字词、语义与混合检索；按作者、年份筛选 |
+| 回到原文 | 每篇论文展示来源摘要、与查询的关系和正文命中页；点击在 Zotero 打开对应附件页 |
+| 阅读与比较 | 收藏、阅读清单、带出处笔记；相似文献推荐；六维文献对照及导出 |
+| 发现关联 | 主题图谱、邻居高亮、关系依据和人工连线；图谱与检索、文献详情互相跳转 |
+| 按需使用 AI | 配置自己的 API 连接，逐次预览并确认材料后提问、归纳、翻译或提取比较草稿 |
 
-导入中的“清理”仅影响 SocioLit 的派生索引，绝不删除或更改 Zotero 原文件。书目以事务提交，PDF 按文件逐个提交，大型导入中断后可再次点击导入继续；完成前页面会提示部分 PDF 索引可能尚未刷新。切换旧版 Zotero 库时，需要更改 `zotero.library_name`；Zotero 10 的服务器实例标识可辅助区分资料库。JSON 导出与 Local API 被视为不同来源，跨导入方式不会自动合并私人文献。详见[Zotero 方案核实](docs/zotero-research.md)。
+个人文献、PDF、笔记、索引和密钥保存在本机。全文检索和规则整理可以独立运行；语义检索使用另行下载的本地模型，云端 AI 由你按次决定是否发送材料。[AI 与资料说明](docs/ai.md) · [导入与同步说明](docs/zotero-research.md)
 
-扫描 PDF 或空白文字层可在 Windows 桌面版“资料与设置”中识别。使用 Windows 自带 OCR 和已安装语言包，按批次处理，原 PDF 不修改，识别片段标注为 OCR。表格、脚注、双栏文字的提取顺序需要回到 PDF 核查。页码定位是来源导航，不是对引文正确性的自动保证。
+## 三套风格，一整个工作台
 
-## 本地语义模型
+**0.9.0 将界面风格与配色分开。** 在 **资料与设置 → 界面风格** 选择整套设计，先预览，再保存；可以随时取消预览。
 
-基础安装不包含体积较大的机器学习依赖和模型；全文检索可以独立使用。启用语义检索：
+| Apple · 轻透工作台 | Windows · 高效工作区 | Material · 灵感空间 |
+| --- | --- | --- |
+| 悬浮侧栏、轻透工具栏、安静阅读纸面 | 停靠导航、分层工作区、清楚的选中标记 | 窄导航轨、大圆角容器、舒展标题 |
+| 圆角控件与轻量过渡 | 方正控件与快速切换 | 胶囊控件与柔和动效 |
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -e ".[semantic]"
-.\.venv\Scripts\python.exe -m sociolit prepare-model --config config.local.toml
-.\.venv\Scripts\python.exe -m sociolit embed --config config.local.toml
-.\.venv\Scripts\python.exe -m sociolit search "照料责任如何影响就业连续性" --semantic --config config.local.toml
-```
+导航、卡片、字体层级、控件、图谱节点和切换动画一起变化。每套仍可选择配色、墨夜、跟随系统、高对比与紧凑密度；切换时保留当前研究内容。[风格说明与官方参考](docs/v0.9-design-systems.md)
 
-`prepare-model` 只下载 [intfloat/multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small) 模型资产，不上传资料。之后编码和查询强制本地加载，不启用远程模型代码。首次下载可能受网络限制；目录必须为空，下载中断时请使用新的 `semantic.model_path` 重试。模型 revision 记录在本地 manifest 中；升级模型后重建索引。
+## 三步开始
 
-如果官方模型大文件下载反复中断，可在安装 `[semantic]` 依赖后运行 `python scripts/prepare_model_verified.py`：它从官方 Hugging Face 读取清单，以 ModelScope 传输模型权重，支持分段续传，并对照官方 SHA-256 校验完整文件；其他配置和分词文件也按官方清单核验。整个过程只下载公开模型，不发送文献。若设置了自定义 `semantic.model_path`，请同时向该脚本传入 `--target` 指向同一目录。若官方清单不可用或任何校验不一致，脚本会停止，且不将模型标记为可用。
+1. 安装并打开软件；保持 Zotero 运行，在 Zotero 的“设置 → 高级”中允许本机应用通信。
+2. 在“资料与设置”选择允许读取的 PDF 文件夹，测试连接并同步 Zotero。
+3. 搜索一个研究问题，从摘要、命中页进入阅读、比较或图谱。需要语义检索时再下载模型并建立索引，大库可以先选核心文件夹。
 
-可以在本地配置的 `[semantic]` 下设置 `collection_keywords = ["生育", "婚育"]`，将语义试点限定到 Zotero 中名称匹配的文件夹及其子文件夹，附属笔记随父条目进入试点。构建试点时需打开 Zotero，以识别文件夹；构建后可以离线搜索。页面会明确显示语义检索范围，全文检索仍覆盖整个本地库。同步过 Zotero 后，应重新点击“构建语义索引”以刷新范围及变化的片段；未变化的向量会复用。删除这一配置后，下次构建将覆盖全部资料。
+[完整使用说明](docs/windows.md) · [推荐、批注与比较](docs/reading-tools.md) · [AI 连接与发送预览](docs/ai.md)
 
-构建索引期间，全文检索可用；为保护同一本地库的写入一致性，新的 Zotero 导入、语义索引构建和手动期刊更新需要等待当前构建结束。定时期刊检查若恰好需要写入而遇到占用，会在下次检查时重试，不会把失败记录成成功。
+<details>
+<summary><strong>期刊更新目前支持哪些来源？</strong></summary>
 
-MVP 采用每页最多 400 字符、重叠 80 字符的片段与本地余弦检索。向量分批保存，中断后可以继续；在所选范围的全部片段完成前，语义搜索会提示索引不完整。CPU 推理默认限制为 2 个线程，可在启动进程时通过 `OMP_NUM_THREADS` 和 `MKL_NUM_THREADS` 调整。大文献库的首次构建可能需要很长时间及较多磁盘空间；查询采用线性扫描。模型有 token 长度限制，极端多语言字符可能被截断；暂不承诺长文检索召回率。真实模型及个人核心文献的相关性评测应在安装模型后开展，自动测试使用可控编码器检验索引逻辑。
+现已启用《社会》《人口研究》的官网当期与过刊目录，以及《社会学研究》《中国人口科学》的官网当期目录。《社会学评论》《人口学刊》《中国社会科学》仍为来源待接入。只发现元数据与来源链接，全文遵从版权和机构访问限制。
 
-## 期刊配置与按月更新
+可配置合法 RSS、Crossref 与 OpenAlex；本地按月检查和补查，提示新增与更正。不同来源的历史覆盖范围不同，当前目录快照可能漏掉长期未运行期间的期次。提醒显示在软件内；目前没有邮件或微信推送。[逐刊状态](docs/discovery-research.md) · [定时更新说明](docs/automation.md)
 
-`config.local.toml` 只用于本机；`config/public-journals.toml` 用于可能公开的 GitHub Actions，两者不会自动合并。默认配置中四刊的官网目录已启用，其他三刊待接入。增加一个确实可用的来源后，可填写：
+</details>
 
-```toml
-[[journals]]
-name = "已核验期刊名称"
-issns = ["实际 ISSN"]
-enabled = true
-sources = ["crossref"]  # 可选 crossref / openalex / rss；official_toc 和 cass_current_toc 只适用于各自已核验的两刊
-# rss_url = "https://出版机构的实际订阅地址"
-```
+<details>
+<summary><strong>模型、数据与使用范围</strong></summary>
 
-不要照抄占位值运行。RSS 只允许公开 HTTPS，校验证书，不自动绕过失效订阅源。无 DOI 记录只有题名、年份、第一作者一致且不与不同 DOI 冲突才合并。没有结果不等于没有发表新文章。
+- 当前 Zotero 导入支持本机个人库，附件保留在原位置，程序不读取或上传 Zotero 数据库。
+- 同步清理仅处理本软件的派生索引；重复项只给候选，不自动删除论文或合并 Zotero 条目。
+- 语义检索范围以已建立的索引为准；首次大库构建会占用时间和磁盘。跨语言检索的相关性仍需结合具体问题核对。
+- AI 为可选项，使用自己的 API 密钥与额度；答复和结构化草稿需要核对来源。
+- 图谱自动连线表示阅读线索；实际 PDF 页序、文件页标签与刊物印刷页码可能不同。
+- 部分 Windows 机器需要微软 WebView2 Runtime。原 PDF 和完整资料目录仍需自行定期备份。
 
-```powershell
-# 手动更新；输出仍在本机
-.\.venv\Scripts\python.exe -m sociolit discover --config config.local.toml
-# 仅检查本月尚未成功的来源，用于日常定时任务
-.\.venv\Scripts\python.exe -m sociolit discover --due --config config.local.toml
-# 选择运行此脚本后，才会安装当前用户的 Windows 定时任务
-.\scripts\register-monthly.ps1
-```
+</details>
 
-默认回查 90 天、与上次成功日期至少重叠 7 天；久未开机时回溯至上次成功时间。《社会》《人口研究》官方目录沿“上一期”逐期回查到窗口之前，页面异常、政策禁止或达到上限时停止并报告。首次会收录一部分窗口之前的期刊目录，作为去重基线，不应将其理解为当月新发表。Crossref 使用索引日期，可发现旧文献的元数据变化。OpenAlex 免费过滤依赖发表日期，RSS 依赖当前 feed 保留范围，这两者不能保证补齐所有迟收录和漏期。分页上限或来源失败时不推进对应成功日期。
+## 文档与参与
 
-本地提醒是页面更新状态和本地 `digest.md`，**没有系统弹窗、邮件或微信推送**。程序不会代用户发送消息。Windows 任务需要登录用户及可用网络；每位使用者需自行选择是否安装定时任务。
+[使用文档](docs/README.md) · [开发与命令](docs/development.md) · [架构](docs/architecture.md) · [验证记录](docs/validation.md) · [版本记录](CHANGELOG.md)
 
-OpenAlex 启用时从环境变量读取 `OPENALEX_API_KEY`；跨页要求有效 key，详见[当前接口核实](docs/discovery-research.md)。Crossref 的 `CROSSREF_MAILTO` 可选。`.env.example` 只是说明，程序不自动载入 `.env`；请在当前终端或系统环境中设置。不要在配置中硬编码密钥。
+[贡献指南](CONTRIBUTING.md) · [开发计划](ROADMAP.md) · [安全与隐私](SECURITY.md) · [第三方依赖](THIRD_PARTY_NOTICES.md)
 
-GitHub 的定时触发可能延迟或丢弃，公开仓库长期无活动时可能停用，且运行器不能访问个人电脑。GitHub 报告目前只做单次窗口去重，本地缓存才提供跨次去重。详见[自动化说明](docs/automation.md)。
-
-## 命令与资料位置
-
-```powershell
-python -m sociolit import-zotero --config config.local.toml
-python -m sociolit import-zotero --config config.local.toml --export "D:/Exports/library.json"
-python -m sociolit search "劳动关系" --config config.local.toml
-python -m sociolit status --config config.local.toml
-```
-
-CSL JSON 仅提供元数据；含附件的导出需要显式附件路径且仍受目录许可限制。导出文件不是 Zotero 数据库。
-
-资料目录优先级：`--data-dir` → `local.data_dir` → `SOCIOLIT_DATA_DIR` → 默认 Windows `%LOCALAPPDATA%/SocioLit`，其他系统 `~/.local/share/SocioLit`。其中 `library.sqlite3` 保存全文/元数据/笔记/向量；`discovery/metadata-cache.json` 保存期刊历史；`discovery/digests/` 保存最新报告，`discovery/history/` 保存历次报告；`models/` 保存本地模型。这些内容不属于开源交付。
-
-关闭应用后备份完整资料目录，并另行备份 Zotero 资料。升级前已有一致性快照；完整定期备份仍需使用者管理。AI 阅读与文献比较仅依据显式选择的片段，不代表通读整库。当前没有多用户部署、自动整库代理或知识图谱。
-
-## 开发、测试与开源准备
-
-```powershell
-python -m pip install -e ".[dev]"
-python -m pytest -q
-python -m ruff check src tests
-```
-
-测试使用合成 PDF 和模拟来源，不访问个人文献、不要求密钥、不依赖外部网络。覆盖安全导入、PDF 变化、原文页码、跨库隔离、笔记标记、语义索引失效、分页去重、恶意 XML、来源失败与调度水位。实际运行环境及结果见[验证记录](docs/validation.md)。CI 当前只维护 Windows、Python 3.11/3.13，构建情况见 GitHub Actions。
-
-项目采用 MIT 开源许可。参与开发时只提交经审查的代码、文档、公开配置和合成测试。`.gitignore` 屏蔽常见 PDF、数据库、模型和密钥文件，但不能保证识别任意命名的私人资料。先检查待提交文件，再创建远端仓库。代码采用 MIT 许可，论文与第三方模型的许可独立适用。详见 [SECURITY.md](SECURITY.md) 和[架构说明](docs/architecture.md)。
-
-## 参与项目
-
-- [贡献指南](CONTRIBUTING.md)：安装、检查和期刊适配要求。
-- [开发计划](ROADMAP.md)：现有功能和后续方向。
-- [版本记录](CHANGELOG.md)：发布变化。
-- [第三方依赖说明](THIRD_PARTY_NOTICES.md)：代码、模型和论文的许可边界。
-
-本项目尚处于早期阶段。欢迎使用合成样例报告问题；请不要上传私人论文、Zotero 导出或未经脱敏的日志。
-
-## 保存检索、阅读笔记和扫描页
-
-执行检索后可命名并保存条件，在“检索与笔记”中重新运行。结果中的“写阅读笔记”保留来源片段快照，也可新建独立笔记。笔记可以编辑、归档、恢复，不写回 Zotero，同步删除条目不会删除这些笔记。OCR 只给没有原生文本的页面增加派生片段；未改变的附件再次同步会复用 OCR，PDF 改变后移除旧 OCR。图像和识别文字只在本机处理。详情见 [0.3 使用说明](docs/windows.md)。
-
-## 0.7 新增工作台
-
-默认智能中英互搜；全库题名摘要语义索引与原全文试点分开，首次在“资料整理”建立，后续同步增量补齐。新增重复候选、共用AI连接的片段整理、可手动连线与归档的文献图谱，以及八款主题和动效设置。详见[0.7使用说明](docs/v0.7-workbench.md)。语义相似和自动图谱线索均需核对，软件不自动删除私人原文或合并Zotero记录。
+采用 [MIT 许可](LICENSE)。欢迎提交可复现的问题与改进建议；问题报告请使用合成示例，并去除私人文献、密钥和个人路径。
