@@ -11,6 +11,8 @@ from .software_updates import UpdateError, verify_installer
 
 
 def native_install_context():
+    if sys.platform == 'darwin':
+        return {'supported': False, 'mode': 'macos', 'message': 'Mac 预览版可检查更新；请退出软件后替换应用，原有资料与设置继续沿用。'}
     if sys.platform != "win32" or not getattr(sys, "frozen", False):
         return {"supported": False, "mode": "source", "message": "源码运行可检查和下载更新；一键安装需使用 Windows 桌面发布版。"}
     import winreg

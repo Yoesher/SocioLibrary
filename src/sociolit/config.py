@@ -1,4 +1,5 @@
 import os
+import sys
 import tomllib
 from pathlib import Path
 
@@ -6,6 +7,8 @@ from pathlib import Path
 def default_data_dir() -> Path:
     if os.environ.get("SOCIOLIT_DATA_DIR"):
         return Path(os.environ["SOCIOLIT_DATA_DIR"]).expanduser().resolve()
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library' / 'Application Support' / 'SocioLit'
     base = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share"))
     return base / "SocioLit"
 

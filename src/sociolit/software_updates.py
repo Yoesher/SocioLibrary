@@ -40,14 +40,14 @@ class Release:
     notes: str = ""
 
 
-def validate_download_url(url, *, version, initial=False):
+def validate_download_url(url, *, version, initial=False, asset_name=None):
     try:
         parsed = urlparse(url)
         if (parsed.scheme != "https" or parsed.username or parsed.password or parsed.fragment
                 or parsed.port not in (None, 443)):
             raise ValueError("Unsafe URL")
         if parsed.hostname == "github.com":
-            name = f"SocioLibrary-{version}-Windows-x64-Setup.exe"
+            name = asset_name or f"SocioLibrary-{version}-Windows-x64-Setup.exe"
             if parsed.path != f"/{REPOSITORY}/releases/download/v{version}/{name}" or parsed.query:
                 raise ValueError("Wrong repository or asset")
         elif initial or parsed.hostname not in CDN_HOSTS:
@@ -56,7 +56,7 @@ def validate_download_url(url, *, version, initial=False):
         raise UpdateError("更新地址不属于本项目的官方发布来源，已拒绝下载。") from exc
 
 
-def parse_release(payload, current_version):
+def parse_release(payload, current_version, *, asset_name=None):
     if not isinstance(payload, dict) or payload.get("draft") is not False or payload.get("prerelease") is not False:
         raise UpdateError("只接受官方正式版本，不安装草稿或预发布版本。")
     tag = payload.get("tag_name", "")
@@ -65,13 +65,13 @@ def parse_release(payload, current_version):
     version = tag[1:]
     if version_tuple(version) <= version_tuple(current_version):
         return None
-    name = f"SocioLibrary-{version}-Windows-x64-Setup.exe"
+    name = asset_name(version) if asset_name else f"SocioLibrary-{version}-Windows-x64-Setup.exe"
     assets = payload.get("assets", [])
     if not isinstance(assets, list):
         raise UpdateError("更新文件列表无效。")
     found = [a for a in assets if isinstance(a, dict) and a.get("name") == name]
     if len(found) != 1:
-        raise UpdateError("该版本尚未提供完整的 Windows 安装包，请稍后检查。")
+        raise UpdateError("该版本尚未提供当前平台的完整更新包，请稍后检查。")
     asset = found[0]
     digest = asset.get("digest", "")
     size = asset.get("size")
@@ -80,7 +80,7 @@ def parse_release(payload, current_version):
             or asset.get("state") != "uploaded"):
         raise UpdateError("更新包缺少有效校验值或大小信息，暂不安装。")
     url = asset.get("browser_download_url", "")
-    validate_download_url(url, version=version, initial=True)
+    validate_download_url(url, version=version, initial=True, asset_name=name)
     notes = payload.get("body") or "此版本未填写更新说明。"
     if not isinstance(notes, str):
         raise UpdateError("版本说明格式无效。")
@@ -93,7 +93,7 @@ def client_factory():
                         headers={"User-Agent": "SocioLibrary-Windows-Updater", "Accept-Encoding": "identity"})
 
 
-def fetch_release(client, current_version):
+def fetch_release(client, current_version, *, asset_name=None):
     with client.stream("GET", LATEST_URL, headers={"Accept": "application/vnd.github+json",
                                                  "X-GitHub-Api-Version": "2022-11-28"}) as response:
         if response.status_code in (403, 429):
@@ -108,7 +108,7 @@ def fetch_release(client, current_version):
         payload = json.loads(body)
     except ValueError as exc:
         raise UpdateError("更新服务未返回有效版本信息。") from exc
-    return parse_release(payload, current_version)
+    return parse_release(payload, current_version, asset_name=asset_name)
 
 
 def verify_installer(path, release):
@@ -343,7 +343,7 @@ class UpdateManager:
                 self._settings["last_attempt"] = time.time()
                 self._persist()
             with self._factory() as client:
-                release = fetch_release(client, self._version)
+                release = self._fetch(client)
             with self._lock:
                 self._release, self._ready = release, None
                 self._downloaded = self._total = 0
@@ -351,6 +351,9 @@ class UpdateManager:
                 self._persist()
                 self._state = "available" if release else "current"
         return self._start("checking", run)
+
+    def _fetch(self, client):
+        return fetch_release(client, self._version)
 
     def download(self):
         with self._lock:

@@ -64,6 +64,8 @@ def discover_due(store, config, *, force=False, output_dir=None, today=None, run
             items = [dict(key=r["id"], title=r["title"], authors=r["authors"], year=r["year"],
                           doi=r["doi"], abstract="", tags=[r["journal"]], item_type="discovery", raw=r) for r in records]
             import_snapshot(store, Snapshot("journals:public-metadata", items, [], True), assume_locked=True)
+            from .journal_inbox import sync
+            sync(store)
             for key in successful:
                 store.set_state(key, today.isoformat())
             summary.update(complete=result.complete, errors=result.errors, warnings=result.warnings,

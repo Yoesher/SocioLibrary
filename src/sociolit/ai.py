@@ -5,6 +5,7 @@ import ipaddress
 import json
 import os
 import re
+import sys
 import time
 import uuid
 from hashlib import sha256
@@ -124,6 +125,42 @@ class WindowsProtector:
             raise AIError("密钥记录无效，请重新填写；不会尝试明文读取。") from exc
 
 
+class MacKeychainProtector:
+    """Only the macOS Keychain backend; never a plaintext or automatic fallback."""
+    service = 'org.yoesher.sociolibrary'
+
+    def __init__(self, backend=None):
+        self.backend = backend
+
+    def _backend(self):
+        if self.backend is None:
+            try:
+                from keyring.backends.macOS import Keyring
+                self.backend = Keyring()
+            except Exception:
+                raise AIError('无法访问 macOS 钥匙串，请检查系统授权；不会明文保存密钥。') from None
+        return self.backend
+
+    def protect(self, text, context):
+        identity = uuid.uuid4().hex
+        try:
+            self._backend().set_password(self.service, identity, json.dumps({'context': sha256(context.encode()).hexdigest(), 'secret': text}))
+        except Exception:
+            raise AIError('无法写入 macOS 钥匙串，密钥未保存，请检查系统授权。') from None
+        return 'keychain:' + identity
+
+    def unprotect(self, text, context):
+        if not re.fullmatch(r'keychain:[a-f0-9]{32}', text):
+            raise AIError('这份密钥不属于当前 Mac 钥匙串，请重新填写密钥。')
+        try:
+            value = json.loads(self._backend().get_password(self.service, text[9:]) or '{}')
+            if value.get('context') != sha256(context.encode()).hexdigest() or not isinstance(value.get('secret'), str):
+                raise ValueError
+            return value['secret']
+        except Exception:
+            raise AIError('无法从 macOS 钥匙串读取该连接的密钥，请重新填写。') from None
+
+
 def _context(profile):
     return "SocioLibrary:" + ":".join(profile[key] for key in ("id", "protocol", "base_url"))
 
@@ -135,7 +172,7 @@ def profile_revision(profile):
 class Profiles:
     def __init__(self, directory, protector=None):
         self.path = directory / "ai-profiles.json"
-        self.protector = protector or WindowsProtector()
+        self.protector = protector or (MacKeychainProtector() if sys.platform == 'darwin' else WindowsProtector())
         self.lock = FileLock(str(directory / "ai-profiles.lock"), timeout=1)
 
     def _read(self):

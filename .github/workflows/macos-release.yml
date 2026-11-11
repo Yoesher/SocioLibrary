@@ -1,0 +1,55 @@
+name: Build macOS desktop previews
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - name: Install native desktop runtime
+        run: |
+          python -m pip install -e ".[desktop,dev]"
+          if [ "${{ matrix.arch }}" = "arm64" ]; then python -m pip install -e ".[semantic]"; fi
+      - name: Verify native architecture and source
+        run: |
+          python -c "import platform; assert platform.machine() == '${{ matrix.arch }}'"
+          python -m pytest -q --ignore=tests/test_paper_search.py --ignore=tests/test_upgrades.py --ignore=tests/test_desktop_features.py --ignore=tests/test_zotero_launcher.py
+          python -m ruff check src tests scripts
+          python scripts/check_public_files.py
+      - name: Build application and packages
+        run: python scripts/build_macos.py
+      - name: Exercise frozen application and Cocoa window
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          exe = './dist/SocioLibrary.app/Contents/MacOS/SocioLibrary'
+          for flag, folder, result in [('--smoke-test','sl-mac-smoke','smoke-result.json'),('--gui-smoke-test','sl-mac-gui','gui-smoke-result.json')]:
+              data = root / folder
+              subprocess.run([exe, flag, '--data-dir', str(data)], timeout=180, check=True)
+              value = json.loads((data / result).read_text())
+              print(json.dumps(value))
+              assert value['ok']
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: SocioLibrary-macOS-${{ matrix.arch }}
+          path: release-dist/*
+          retention-days: 30

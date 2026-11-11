@@ -1,4 +1,4 @@
-"""Windows desktop entry point. Installer data and research data are separate."""
+"""Windows and macOS desktop entry point. Installer data and research data are separate."""
 import argparse
 import ctypes
 import json
@@ -35,10 +35,15 @@ def base_config():
 
 
 def message(text):
-    ctypes.windll.user32.MessageBoxW(None, text, "SocioLibrary", 0x40)
+    if os.name == 'nt':
+        ctypes.windll.user32.MessageBoxW(None, text, "SocioLibrary", 0x40)
+    else:
+        logging.error('%s', text)
 
 
 def installer_mutex():
+    if os.name != 'nt':
+        return None, None
     from ctypes import wintypes
 
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -63,7 +68,11 @@ def initialize_desktop_library(directory):
                 previous_scope = store.state("semantic_scope")
                 if isinstance(previous_scope, dict) and previous_scope.get("label"):
                     config.setdefault("semantic", {})["collection_keywords"] = previous_scope["label"].split("、")
-            app = create_app(store, config)
+            if sys.platform == 'darwin':
+                from .macos import MacUpdateManager
+                app = create_app(store, config, updater=MacUpdateManager(directory, __version__))
+            else:
+                app = create_app(store, config)
             complete_upgrade(directory, report)
             return store, config, app
     except Timeout as exc:
@@ -76,8 +85,12 @@ class DesktopAPI:
         target = locate(self._store, file_id, page)
         if not target['zotero_url']:
             return {'opened': False, 'message': '此附件不是从当前 Zotero 个人库导入，请使用本机 PDF 预览。'}
+        if sys.platform == 'darwin':
+            from .macos import open_zotero
+            open_zotero(target['zotero_url'])
+            return {'opened': True}
         if os.name != 'nt':
-            return {'opened': False, 'message': 'Zotero 客户端跳转目前支持 Windows。'}
+            return {'opened': False, 'message': '当前平台不支持原生跳转。'}
         from .zotero_launcher import launch
         launch(target['zotero_url'])
         return {'opened': True}
@@ -192,8 +205,38 @@ class DesktopAPI:
                 temp.unlink(missing_ok=True)
             return {"saved": True}
 
+    def export_graph(self, identity, include_annotations=False):
+        import re
+
+        import webview
+
+        from . import graph_views
+        if not isinstance(identity, str) or not re.fullmatch(r'[a-f0-9]{32}', identity) or type(include_annotations) is not bool:
+            raise ValueError('导出参数无效。')
+        with self._native_lock, FileLock(str(self._directory / 'library.lock'), timeout=1):
+            content = graph_views.export(self._store, identity, include_annotations)
+            paths = self._window.create_file_dialog(webview.SAVE_DIALOG, directory=str(self._directory),
+                save_filename='SocioLibrary-research.zip', file_types=('ZIP (*.zip)',))
+            if not paths:
+                return {'saved': False}
+            path = Path(paths[0])
+            if path.suffix.lower() != '.zip':
+                path = path.with_name(path.name + '.zip')
+            if path.resolve().is_relative_to(self._directory.resolve()):
+                raise ValueError('研究包请保存到资料库以外的导出文件夹。')
+            temp = path.with_name('.' + path.name + '.' + uuid.uuid4().hex + '.tmp')
+            try:
+                temp.write_bytes(content)
+                os.replace(temp, path)
+            finally:
+                temp.unlink(missing_ok=True)
+            return {'saved': True}
+
     def open_data_folder(self):
-        os.startfile(str(self._directory))
+        if sys.platform == 'darwin':
+            __import__('subprocess').Popen(['/usr/bin/open', str(self._directory)])
+        else:
+            os.startfile(str(self._directory))
         return True
 
     def open_releases(self):
@@ -203,27 +246,33 @@ class DesktopAPI:
     def open_update_folder(self):
         directory = self._app.state.updater.cache_directory()
         directory.mkdir(parents=True, exist_ok=True)
-        os.startfile(str(directory))
+        if sys.platform == 'darwin':
+            __import__('subprocess').Popen(['/usr/bin/open', str(directory)])
+        else:
+            os.startfile(str(directory))
         return True
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke-test", action="store_true")
+    parser.add_argument("--gui-smoke-test", action="store_true")
     parser.add_argument("--data-dir")
     parser.add_argument("--update-journals", action="store_true")
     args = parser.parse_args()
-    if sys.platform != "win32":
-        raise SystemExit("Desktop distribution currently supports Windows only.")
+    if args.gui_smoke_test and (os.environ.get('GITHUB_ACTIONS') != 'true' or not args.data_dir):
+        raise SystemExit('GUI smoke mode is limited to isolated build runners')
+    if sys.platform not in ("win32", "darwin"):
+        raise SystemExit("Desktop distribution supports Windows and macOS.")
     try:
         directory = resolve_desktop_directory(args.data_dir)
     except UpgradeError as exc:
-        if args.smoke_test:
+        if args.smoke_test or args.gui_smoke_test:
             raise
         message(str(exc))
         return
     directory.mkdir(parents=True, exist_ok=True)
-    if args.smoke_test:
+    if args.smoke_test or args.gui_smoke_test:
         # Isolated data folder is mandatory; never touch an existing user library.
         if not args.data_dir or (directory / "library.sqlite3").exists():
             raise SystemExit("Smoke test requires a new isolated --data-dir")
@@ -244,7 +293,7 @@ def main():
     kernel = mutex = None
     try:
         kernel, mutex = installer_mutex()
-        if args.smoke_test:
+        if args.smoke_test or args.gui_smoke_test:
             from .smoke import seed_upgrade_fixture
             seed_upgrade_fixture(directory)
         store, config, app = initialize_desktop_library(directory)
@@ -272,7 +321,8 @@ def main():
             assert Path(__file__).with_name("update.ps1").is_file(), "Windows updater helper missing from package"
             import webview  # noqa: F401
             from pypdf import PdfWriter
-            from sentence_transformers import SentenceTransformer  # noqa: F401
+            if not (sys.platform == 'darwin' and __import__('platform').machine() == 'x86_64'):
+                from sentence_transformers import SentenceTransformer  # noqa: F401
 
             from .indexing import extract_pdf
             writer = PdfWriter()
@@ -288,7 +338,7 @@ def main():
                 assert client.get(url + "/static/app.js").status_code == 200
                 assert client.get(url + "/static/ai.js").status_code == 200
                 assert client.get(url + "/static/literature.js").status_code == 200
-                for asset in ('journals.js', 'network.js', 'papers.js', 'navigation.js', 'desktop-ui.css', 'cytoscape-3.35.0.min.js', 'cytoscape-LICENSE.txt'):
+                for asset in ('graph-notebooks.js', 'journal-inbox.js', 'journals.js', 'network.js', 'papers.js', 'navigation.js', 'desktop-ui.css', 'cytoscape-3.35.0.min.js', 'cytoscape-LICENSE.txt'):
                     assert client.get(url + '/static/' + asset).status_code == 200
                 paper_results = client.post(url + '/api/search/papers', json={'query': 'synthetic', 'mode': 'fulltext'},
                     headers={'X-Sociolit-Token': status['token']}).json()
@@ -315,18 +365,20 @@ def main():
                     headers={"X-Sociolit-Token": status["token"]}).json()["edges"]) == 1
                 ai_response = client.get(url + "/api/ai/profiles", headers={"X-Sociolit-Token": status["token"]})
                 assert ai_response.status_code == 200
-                assert ai_response.json()["profiles"][0]["has_key"]
+                if os.name == "nt":
+                    assert ai_response.json()["profiles"][0]["has_key"]
                 assert "synthetic-smoke-secret" not in ai_response.text
                 assert client.post(url + "/api/jobs/import").status_code == 403
             from .smoke import check_upgrade_fixture
             from .update_install import native_install_context
             inherited = check_upgrade_fixture(directory, store)
             context = native_install_context()
-            assert context["supported"] == bool(getattr(sys, "frozen", False))
+            assert context["supported"] == (sys.platform == "win32" and bool(getattr(sys, "frozen", False)))
             (directory / "smoke-result.json").write_text(json.dumps({"ok": True, "version": __version__,
                 "updater_mode": context["mode"], **inherited}), encoding="utf-8")
             return
-        remember_directory(directory)
+        if not args.gui_smoke_test:
+            remember_directory(directory)
         import webview
         bridge = DesktopAPI()
         bridge._directory = directory
@@ -347,7 +399,22 @@ def main():
                 app.state.updater.check(automatic=True)
             except RuntimeError:
                 pass
-        bridge._window.events.loaded += start_updates
+        if args.gui_smoke_test:
+            def gui_check():
+                def inspect():
+                    try:
+                        value = bridge._window.evaluate_js("({version:document.getElementById('version').textContent, notebooks:!!document.getElementById('graph-view-save'), inbox:!!document.getElementById('journal-inbox-form')})")
+                        value['ok'] = __version__ in value['version'] and value['notebooks'] and value['inbox']
+                        (directory / 'gui-smoke-result.json').write_text(json.dumps(value), encoding='utf-8')
+                    except Exception:
+                        (directory / 'gui-smoke-result.json').write_text('{"ok":false}', encoding='utf-8')
+                    finally:
+                        bridge._window.confirm_close = False
+                        bridge._window.destroy()
+                threading.Timer(4, inspect).start()
+            bridge._window.events.loaded += gui_check
+        else:
+            bridge._window.events.loaded += start_updates
         def periodic_updates():
             while not update_stop.wait(3600):
                 try:
@@ -355,17 +422,17 @@ def main():
                 except RuntimeError:
                     pass
         threading.Thread(target=periodic_updates, daemon=True).start()
-        webview.start(gui="edgechromium", debug=False, private_mode=True)
+        webview.start(gui="cocoa" if sys.platform == "darwin" else "edgechromium", debug=False, private_mode=True)
     except UpgradeError as exc:
         logging.exception("Upgrade initialization stopped")
-        if args.smoke_test:
+        if args.smoke_test or args.gui_smoke_test:
             raise
         message(str(exc))
     except Exception:
         logging.exception("Desktop startup failed")
-        if args.smoke_test:
+        if args.smoke_test or args.gui_smoke_test:
             raise
-        message("启动未完成。研究资料仍保存在原目录，请查看资料目录 logs 中的诊断记录；窗口组件需要 Microsoft Edge WebView2 Runtime。")
+        message("启动未完成。研究资料仍保存在原目录，请查看资料目录 logs 中的诊断记录；Windows 窗口组件需要 Microsoft Edge WebView2 Runtime；Mac 请查看应用启动日志。")
     finally:
         update_stop.set()
         if server:

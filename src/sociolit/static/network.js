@@ -1,7 +1,7 @@
 /* Incremental, local-only graph explorer. No model loading or remote assets. */
 (() => {
   const C=GraphCore,make=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
-  let data=null,seed='',currentQuery='',selected='',busy=false,writing=false,linkDirty=false,cy=null,immersivePreferred=false;
+  let savedStamp='',data=null,seed='',currentQuery='',selected='',busy=false,writing=false,linkDirty=false,cy=null,immersivePreferred=false;
   let origin='all',motion=true,opening=false,requestId=0,controller=null,simulation=0,layoutJob=null,minimapTimer=0,layoutVersion=0,fitWhenSettled=false,freshTimer=0,cameraTimer=0;
   let applied={limit:'15',auto:true,archived:false};
   let pinned=new Set(),dragging=new Set(),dragged=new Set(),past=[],future=[],mapTransform=null,lastTap={id:'',time:0};
@@ -9,7 +9,7 @@
   const colors=()=>{const s=getComputedStyle(document.documentElement);return [s.getPropertyValue('--graph-dot').trim(),...Array.from({length:5},(_,i)=>s.getPropertyValue('--graph-group-'+(i+1)).trim())];};
   const names={all:'全部',manual:'本人确认',words:'标签与词语',semantic:'语义线索',comparison:'比较表'};
   const sourceName={manual:'本人建立',metadata:'书目共同词语',tags:'共享标签',title:'题名词语',semantic:'本机语义',comparison:'比较表'};
-  window.isGraphBusy=()=>busy||writing;window.isGraphDirty=()=>linkDirty;
+  window.isGraphBusy=()=>busy||writing||Boolean(window.isGraphNotebookBusy?.());window.isGraphDirty=()=>linkDirty;
   el('graph-link-form').addEventListener('input',()=>{linkDirty=true;});
   async function mutateLink(path,payload){writing=true;try{return await api(path,payload);}finally{writing=false;}}
   function styles(){const s=getComputedStyle(document.documentElement),c=k=>s.getPropertyValue('--'+k).trim();return [
@@ -54,11 +54,11 @@
   }
   function camera(id,zoom){fitWhenSettled=false;if(!cy)return;const node=cy.getElementById(id);if(!node.length||node.hasClass('filtered'))return;const p=node.position(),z=zoom||Math.max(cy.zoom(),.95),pan={x:cy.width()/2-p.x*z,y:cy.height()/2-p.y*z};cy.stop();if(isMoving())cy.animate({zoom:z,pan},{duration:320});else{cy.zoom(z);cy.pan(pan);}}
   function fit(){fitWhenSettled=false;if(!cy)return;cy.resize();const eles=cy.elements().not('.filtered');if(!eles.length)return;cy.stop();if(isMoving())cy.animate({fit:{eles,padding:55}},{duration:380});else cy.fit(eles,55);}
-  function record(){if(!data)return null;return C.clone({data,seed,currentQuery,selected,positions:Object.fromEntries(cy.nodes().map(n=>[n.id(),n.position()])),pinned:[...pinned],viewport:{zoom:cy.zoom(),pan:cy.pan()},origin,layout:el('graph-layout').value,orphans:el('graph-orphans').checked,query:currentQuery,limit:applied.limit,auto:applied.auto,archived:applied.archived});}
+  function record(){if(!data)return null;return C.clone({savedStamp,data,seed,currentQuery,selected,positions:Object.fromEntries(cy.nodes().map(n=>[n.id(),n.position()])),pinned:[...pinned],viewport:{zoom:cy.zoom(),pan:cy.pan()},origin,layout:el('graph-layout').value,orphans:el('graph-orphans').checked,query:currentQuery,limit:applied.limit,auto:applied.auto,archived:applied.archived});}
   function checkpoint(){const value=record();if(value){past.push(value);if(past.length>12)past.shift();}future=[];historyButtons();}
   function pinControl(){el('graph-unpin').disabled=!pinned.size;el('graph-unpin').textContent=pinned.size?'释放固定 ('+pinned.size+')':'释放固定';}
   function historyButtons(){el('graph-back').disabled=busy||!past.length;el('graph-forward').disabled=busy||!future.length;}
-  function historyMove(back){if(busy)return;const from=back?past:future,to=back?future:past;if(!from.length)return;const current=record();if(current)to.push(current);const state=from.pop();clearMotion();seed=state.seed;currentQuery=state.currentQuery;selected=state.selected;origin=state.origin;pinned=new Set(state.pinned);el('graph-layout').value=state.layout;el('graph-orphans').checked=state.orphans;el('graph-query').value=state.query;el('graph-limit').value=state.limit;el('graph-auto').checked=state.auto;el('graph-archived').checked=state.archived;applied={limit:state.limit,auto:state.auto,archived:state.archived};render(state.data,true);cy.nodes().forEach(n=>{if(state.positions[n.id()])n.position(state.positions[n.id()]);});cy.zoom(state.viewport.zoom);cy.pan(state.viewport.pan);activity('已返回探索位置');syncMotionControl();historyButtons();}
+  function historyMove(back){if(busy)return;const from=back?past:future,to=back?future:past;if(!from.length)return;const current=record();if(current)to.push(current);const state=from.pop();clearMotion();savedStamp=state.savedStamp||'';seed=state.seed;currentQuery=state.currentQuery;selected=state.selected;origin=state.origin;pinned=new Set(state.pinned);el('graph-layout').value=state.layout;el('graph-orphans').checked=state.orphans;el('graph-query').value=state.query;el('graph-limit').value=state.limit;el('graph-auto').checked=state.auto;el('graph-archived').checked=state.archived;applied={limit:state.limit,auto:state.auto,archived:state.archived};render(state.data,true);cy.nodes().forEach(n=>{if(state.positions[n.id()])n.position(state.positions[n.id()]);});cy.zoom(state.viewport.zoom);cy.pan(state.viewport.pan);activity('已返回探索位置');syncMotionControl();historyButtons();}
   async function request(path,payload){
     const id=++requestId;controller?.abort();controller=new AbortController();const ownController=controller;busy=true;clearMotion();el('graph-load').disabled=true;historyButtons();activity('正在查找关联');
     try{if(!token){const status=await fetch('/api/status').then(r=>r.json());token=status.token;}
@@ -72,7 +72,7 @@
     for(const button of document.querySelectorAll('[data-graph-origin]')){const key=button.dataset.graphOrigin;button.setAttribute('aria-pressed',String(origin===key));button.textContent=names[key]+' '+C.visible(data,key,true).edges.length;}
     el('graph-empty').hidden=!!view.edges.length||!!view.nodes.length;el('graph-minimap').hidden=!el('graph-minimap-visible').checked||!view.nodes.length;
     el('graph-summary').textContent=`图中 ${view.nodes.length} / ${data.nodes.length} 篇 · ${view.edges.length} 条关系`+(data.nodes.length>=80?' · 已达80篇上限':data.limited?' · 可选择节点继续展开':'')+(data.edges_limited?' · 连线已达显示上限，请缩小主题':'');
-    el('graph-context').textContent=seed?'围绕《'+(data.nodes.find(n=>n.id===seed)?.title||'文献')+'》探索':currentQuery?'研究主题：'+currentQuery:'文献概览 · 优先展示已有联系的书目';
+    el('graph-context').textContent=seed?'围绕《'+(data.nodes.find(n=>n.id===seed)?.title||'文献')+'》探索':currentQuery?'研究主题：'+currentQuery:'文献概览 · 优先展示已有联系的书目';if(savedStamp)el('graph-context').textContent+=' · 保存时快照 '+savedStamp;
     if(selected){if(nodeIds.has(selected))highlight(selected);else{cy.nodes().unselect();cy.elements().removeClass('dimmed focused hovered');}}else clearSelection();renderList();scheduleMap();
   }
   function highlight(id,hover=false){if(!cy)return;cy.elements().removeClass('dimmed focused hovered');const node=cy.getElementById(id);if(!node.length||node.hasClass('filtered'))return;const connected=node.closedNeighborhood().not('.filtered');cy.elements().not('.filtered').not(connected).addClass('dimmed');connected.addClass(hover?'hovered':'focused');}
@@ -96,8 +96,8 @@
       const other=data.nodes.find(n=>n.id===id),row=make('article','','graph-relation'),title=make('button',other?.title||'未知文献','text-button');
       title.onclick=()=>{if(other){detail(other);camera(other.id);}};row.append(title);
       for(const edge of edges){
-        row.append(make('small',sourceName[edge.origin]||'关系线索'),make('p',(edge.kind==='cites'&&edge.target===node.id?'被引用（本人确认）':edge.label)+(edge.note?' · '+edge.note:'')));
-        if(edge.origin==='manual'){const archive=make('button',edge.archived?'恢复关系':'归档关系','secondary');archive.onclick=async()=>{try{await mutateLink('/api/graph/links/archive',{identity:edge.id,revision:edge.revision,archived:!edge.archived});await load();}catch(error){notice(error.message,true);}};row.append(archive);}
+        row.append(make('small',(edge.snapshot?'保存时快照 · ':'')+(sourceName[edge.origin]||'关系线索')),make('p',(edge.kind==='cites'&&edge.target===node.id?'被引用（本人确认）':edge.label)+(edge.note?' · '+edge.note:'')));
+        if(edge.origin==='manual'&&!edge.snapshot){const archive=make('button',edge.archived?'恢复关系':'归档关系','secondary');archive.onclick=async()=>{try{await mutateLink('/api/graph/links/archive',{identity:edge.id,revision:edge.revision,archived:!edge.archived});await load();}catch(error){notice(error.message,true);}};row.append(archive);}
       }panel.append(row);
     }
 
@@ -144,7 +144,7 @@
   async function load(target={seed,query:currentQuery}){
     const options={limit:el('graph-limit').value,auto:el('graph-auto').checked,archived:el('graph-archived').checked};
     const incoming=await request('/api/graph',{query:target.seed?'':target.query,seed:target.seed,limit:Number(options.limit),include_auto:options.auto,include_archived:options.archived});if(!incoming)return;
-    checkpoint();applied=options;seed=target.seed;currentQuery=target.query;selected=seed;pinned=new Set();render(incoming,true);arrange();historyButtons();
+    checkpoint();savedStamp='';applied=options;seed=target.seed;currentQuery=target.query;selected=seed;pinned=new Set();render(incoming,true);arrange();historyButtons();
   }
   async function expandNode(id){
     if(busy||!data)return;if(data.nodes.length>=80){el('graph-summary').textContent='已达80篇上限，可选“以此为中心”继续探索。';return;}
@@ -192,6 +192,8 @@
   new MutationObserver(()=>{if(cy){const palette=colors();C.groups(data||{nodes:[],edges:[]}).forEach((group,i)=>group.forEach(id=>cy.getElementById(id).data('color',palette[i%palette.length])));cy.style(styles());cy.resize();scheduleMap();syncMotionControl();if(!isMoving())clearMotion();}}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','data-design','data-density','data-motion']});
   reduced.addEventListener('change',()=>{syncMotionControl();if(!isMoving())clearMotion();});document.addEventListener('visibilitychange',()=>{if(document.hidden)clearMotion();});
   document.addEventListener('workspaceview',event=>{if(event.detail==='graph-view'){if(immersivePreferred)immersive(true,false);if(!data&&!opening)load({seed:'',query:''});else requestAnimationFrame(()=>cy?.resize());}else{clearMotion();el('graph-tooltip').hidden=true;if(document.body.classList.contains('graph-immersive'))immersive(false,false);}});
+  window.captureGraphView=()=>{if(!data||busy||writing)throw Error('请等待图谱载入后再保存。');const r=record();return {...r,ids:data.nodes.map(n=>n.id),node_scale:Number(el('graph-node-scale').value),label_mode:el('graph-label-mode').value};};
+  window.restoreGraphView=view=>{if(busy||writing||linkDirty)throw Error('请先处理正在进行的操作或未保存关系。');ensureCanvas();checkpoint();clearMotion();const s=view.state;savedStamp=view.updated.slice(0,10);seed=s.seed;currentQuery=s.query;selected=s.selected;pinned=new Set(s.pinned);origin=s.origin;el('graph-layout').value=s.layout;el('graph-orphans').checked=s.orphans;el('graph-query').value=s.query;el('graph-limit').value=['15','30','50','80'].includes(s.limit)?s.limit:'80';el('graph-auto').checked=s.auto;el('graph-archived').checked=s.archived;el('graph-node-scale').value=s.node_scale;el('graph-label-mode').value=s.label_mode;applied={limit:el('graph-limit').value,auto:s.auto,archived:s.archived};render(view.data,true);cy.nodes().forEach(n=>{if(s.positions[n.id()])n.position(s.positions[n.id()]);});cy.zoom(s.viewport.zoom);cy.pan(s.viewport.pan);activity('已恢复保存位置 · 关系为快照');syncMotionControl();historyButtons();};
   window.openLiteratureGraph=id=>{opening=true;showView('graph-view');opening=false;load({seed:id,query:''});};
   window.enhanceGraphResult=(box,source)=>{const b=make('button','查看文献关联','text-button');b.onclick=()=>window.openLiteratureGraph(source.item_id);box.append(b);};
   async function lookup(){try{const response=await fetch('/api/literature/catalog?query='+encodeURIComponent(el('graph-link-query').value),{headers:{'X-Sociolit-Token':token}});if(!response.ok)throw Error('查找文献失败');const values=await response.json();for(const key of ['graph-link-source','graph-link-target']){const previous=el(key).value, keep=Array.from(el(key).options).find(o=>o.value===previous);el(key).replaceChildren();const merged=new Map(values.map(v=>[v.id,v.title]));if(keep)merged.set(keep.value,keep.textContent);for(const [id,title] of merged){const option=document.createElement('option');option.value=id;option.textContent=title;el(key).append(option);}if(keep)el(key).value=previous;else if(key==='graph-link-target'&&values.length>1)el(key).selectedIndex=1;}el('graph-link-hint').textContent=`找到 ${values.length} 篇，最多显示30篇。选择两篇并说明关系；可继续查找另一题名，已选项会保留。`;}catch(error){notice(error.message,true);}}

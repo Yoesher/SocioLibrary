@@ -76,3 +76,16 @@ html[data-design] body.graph-immersive .graph-status-row { margin:8px 0; }
 .graph-relation small { display:block; margin:8px 0 2px; }
 
 :root[data-theme=contrast] { --graph-dot:#34313f; --graph-line:#62606c; --graph-canvas:#fff; }
+
+.graph-notebooks { margin:10px 0; padding:10px 0; }
+#graph-views-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:12px; }
+.graph-saved-card { padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--soft); }
+.graph-saved-card h4 { margin:0 0 8px; }
+.graph-saved-card button { font-size:11px!important; padding:6px 10px!important; }
+.journal-inbox { margin-top:26px; padding-top:20px; border-top:1px solid var(--border); }
+html[data-design] .inbox-card { padding:18px; border:1px solid var(--border); background:var(--soft); border-radius:var(--control-radius); margin:12px 0; }
+.inbox-card h4 { margin:0 0 10px; font-size:15px; line-height:1.7; }
+.inbox-card p { font-size:12px; line-height:1.8; color:var(--muted); margin:5px 0; }
+.inbox-card button { font-size:11px!important; }
+
+#journal-inbox-summary { scroll-margin-top:120px; }

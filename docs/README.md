@@ -23,3 +23,6 @@
 - [版本记录](../CHANGELOG.md) · [安全与隐私](../SECURITY.md)
 
 [返回项目首页](../README.md) · [下载最新版](https://github.com/Yoesher/SocioLibrary/releases/latest)
+
+- [同类工具调研与优化取舍](ecosystem-review-2026-11.md)
+- [macOS 预览版范围与安装](macos.md)

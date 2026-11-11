@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sociolit"
-version = "0.11.0"
+version = "0.12.0"
 description = "Local-first sociology literature library with Zotero and journal discovery"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,7 +18,7 @@ Issues = "https://github.com/Yoesher/SocioLibrary/issues"
 
 [project.optional-dependencies]
 semantic = ["sentence-transformers>=5,<6"]
-desktop = ["pywebview>=6,<7; sys_platform == 'win32'", "pyinstaller>=6.16,<7; sys_platform == 'win32'"]
+desktop = ["pywebview>=6,<7", "pyinstaller>=6.16,<7", "keyring>=25,<27; sys_platform == 'darwin'"]
 dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
 
 [project.scripts]

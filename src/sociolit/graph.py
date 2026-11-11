@@ -146,7 +146,7 @@ def overview_order(nodes, links, boards, include_auto):
     return result
 
 
-def build(store, query='', seed='', limit=50, include_auto=True, include_archived=False):
+def build(store, query='', seed='', limit=50, include_auto=True, include_archived=False, *, selected_ids=None):
     if not 10 <= limit <= 80 or len(query) > 200 or len(seed) > 1000:
         raise ValueError('图谱最多80篇；检索条件无效。')
     with store.connect() as db:
@@ -158,7 +158,17 @@ def build(store, query='', seed='', limit=50, include_auto=True, include_archive
     terms = [query.casefold(), *(term.casefold() for term in expand(query))] if query else []
     selected = []
     recommendations = []
-    if seed:
+    if selected_ids is not None:
+        if not 1 <= len(selected_ids) <= 80 or len(set(selected_ids)) != len(selected_ids):
+            raise ValueError('保存视图需包含1至80篇不同文献。')
+        for link in links[:1000]:
+            for snapshot in json.loads(link['snapshots']):
+                if snapshot['id'] in selected_ids and snapshot['id'] not in all_nodes:
+                    all_nodes[snapshot['id']] = {**snapshot, 'current': False}
+        if any(key not in all_nodes for key in selected_ids):
+            raise ValueError('部分文献已移出资料库，请刷新图谱后重新保存。')
+        selected = list(selected_ids)
+    elif seed:
         if seed not in all_nodes:
             raise ValueError('当前书目中找不到中心文献，请重新选择。')
         selected.append(seed)

@@ -69,6 +69,16 @@ def _seed_reading_extensions(store):
     from . import graph
     graph.initialize(store)
     graph.create_link(store, "synthetic:item", "synthetic:gone", "theory", "Synthetic retained graph relation")
+    from . import graph_views, journal_inbox
+    graph_views.initialize(store)
+    saved_view = graph_views.save(store, 'Synthetic saved map', {'ids': ['synthetic:item','synthetic:gone'],
+        'positions': {'synthetic:item': {'x': 0, 'y': 0}, 'synthetic:gone': {'x': 150, 'y': 0}},
+        'pinned': ['synthetic:item'], 'viewport': {'zoom': 1, 'pan': {'x': 12, 'y': 9}}})
+    store.set_state('synthetic-graph-view', saved_view['id'])
+    journal_inbox.initialize(store)
+    with store.connect() as db:
+        db.execute('INSERT INTO journal_inbox VALUES(?,?,?,?,?,?,?)',
+                   ('journals:public-metadata:synthetic-gone', 'fixture', '2026', '2026', 1, 1, 0))
     from . import catalog_semantic
     catalog_semantic.initialize(store)
     with store.connect() as db:
@@ -117,6 +127,12 @@ def check_upgrade_fixture(directory, store):
     from . import graph
     network = graph.build(store, seed="synthetic:item", include_auto=False)
     assert len(network["edges"]) == 1 and any(not node["current"] for node in network["nodes"])
+    from . import graph_views
+    saved_map = graph_views.get(store, store.state('synthetic-graph-view'))
+    assert saved_map['state']['pinned'] == ['synthetic:item']
+    assert not next(n for n in saved_map['data']['nodes'] if n['id'] == 'synthetic:gone')['current']
+    with store.connect() as db:
+        assert tuple(db.execute('SELECT read,favorite FROM journal_inbox').fetchone()) == (1,1)
     return {"data_inherited": True, "snapshot_verified": True, "from_version": "0.3.0",
             "comparison_inherited": True, "annotation_snapshot_inherited": True,
-            "graph_inherited": True, "appearance_inherited": True, "catalog_index_inherited": True, "journal_settings_inherited": True}
+            "graph_inherited": True, "appearance_inherited": True, "catalog_index_inherited": True, "journal_settings_inherited": True, "graph_views_inherited": True, "inbox_state_inherited": True}

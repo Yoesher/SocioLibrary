@@ -1,5 +1,7 @@
+import importlib.util
 import json
 import secrets
+import sys
 import threading
 from hashlib import sha256
 from html import escape
@@ -30,6 +32,7 @@ from .software_updates import UpdateError, UpdateManager
 from .subscriptions import apply_feeds, configure_feed, configure_journal, subscription_views, toggle_journal
 from .upgrades import upgrade_status
 from .workbench_routes import attach_workbench
+from .workspace_routes import attach_workspace
 
 
 class Query(BaseModel):
@@ -171,6 +174,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
     attach_ai(app, store, authorize, mutate, workspace=ai_workspace)
     attach_literature(app, store, config, authorize, mutate, embedder)
     attach_workbench(app, store, authorize, mutate)
+    attach_workspace(app, store, authorize, mutate)
     catalog_semantic.initialize(store)
 
     def paper_semantic(query, selected, mode):
@@ -247,7 +251,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
             except ValueError:
                 homepage = ""
             journals.append(dict(journal, homepage=homepage))
-        return {"stats": store.stats(), "token": token, "last_import": last_import,
+        return {"semantic_runtime": importlib.util.find_spec("sentence_transformers") is not None, "platform": sys.platform, "stats": store.stats(), "token": token, "last_import": last_import,
                 "import_incomplete": store.state("import_incomplete", False),
                 "discovery": store.state("last_discovery"), "file_notices": problems, "file_notice_count": problem_count,
                 "pdf_roots_configured": bool(allowed_roots(config)), "semantic_model_ready": (Path(model_path) / "sociolit-model.json").is_file(),

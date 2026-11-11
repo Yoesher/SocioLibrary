@@ -140,7 +140,7 @@
   async function installReady() {
     if (installing || !updateContext || !updateContext.supported) return;
     if (exporting || noteDirty || preferencesDirty() || searchBusy || (window.isAIBusy && window.isAIBusy()) || (window.isLiteratureBusy && window.isLiteratureBusy()) ||
-        (window.isJournalBusy && window.isJournalBusy()) || (window.isJournalDirty && window.isJournalDirty()) || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty()) || libraryStatus.library_busy ||
+        (window.isGraphNotebookDirty && window.isGraphNotebookDirty()) || (window.isJournalBusy && window.isJournalBusy()) || (window.isJournalDirty && window.isJournalDirty()) || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty()) || libraryStatus.library_busy ||
         libraryStatus.job.state === 'running') {
       el('software-progress-text').textContent = '更新包已就绪，等待保存笔记和设置、结束当前任务；也可选择稍后安装。';
       return;
@@ -155,7 +155,8 @@
   }
   async function beginUpgrade() {
     showView('software-view');
-    if (noteDirty || preferencesDirty() || (window.isJournalBusy && window.isJournalBusy()) || (window.isJournalDirty && window.isJournalDirty()) || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty())) { notice('请先保存笔记、对照表、资料与 AI 设置，并处理对照篮或草稿，再开始升级。', true); return; }
+    if(updateContext?.mode==='macos'){await window.pywebview.api.open_releases();return;}
+    if (noteDirty || preferencesDirty() || (window.isGraphNotebookDirty && window.isGraphNotebookDirty()) || (window.isJournalBusy && window.isJournalBusy()) || (window.isJournalDirty && window.isJournalDirty()) || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty())) { notice('请先保存笔记、对照表、资料与 AI 设置，并处理对照篮或草稿，再开始升级。', true); return; }
     if (!updateState || !updateState.available_version) return;
     installIntent = Boolean(updateContext && updateContext.supported);
     if (updateState.state === 'ready') { await installReady(); return; }
@@ -201,7 +202,7 @@
     el('software-upgrade').textContent = s.state === 'ready' ? '安装并重启' :
       updateContext && updateContext.mode === 'portable' ? '下载并升级为安装版' : '下载并升级';
     if (!updateContext || !updateContext.supported) {
-      el('software-upgrade').textContent = s.state === 'ready' ? '更新包已下载' : '下载更新包';
+      el('software-upgrade').textContent = updateContext?.mode==='macos'?'打开 Mac 下载页':s.state === 'ready' ? '更新包已下载' : '下载更新包';
       if (s.state === 'ready') el('software-upgrade').disabled = true;
     }
     el('software-native-message').textContent = updateContext ? updateContext.message : '桌面发布版支持一键安装；浏览器页面可检查与下载。';

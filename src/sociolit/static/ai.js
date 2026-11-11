@@ -79,7 +79,7 @@
     el('ai-settings').open = true;
   };
   el('ai-new').onclick = () => {el('ai-profile-id').value = ''; el('ai-output-limit').value = '2048';
-    fillPreset(); el('ai-settings').open = true; el('ai-key-state').textContent = '新建连接；密钥只加密保存在当前 Windows 账号下。';};
+    fillPreset(); el('ai-settings').open = true; el('ai-key-state').textContent = '新建连接；密钥保存在当前系统的受保护存储中。';};
   el('ai-discard').onclick = () => {el('ai-profile-id').value = ''; el('ai-key').value = '';
     dirty = false; el('ai-settings').open = false; notice('已放弃未保存的 AI 配置。');};
   for (const id of ['ai-name', 'ai-protocol', 'ai-base-url', 'ai-model', 'ai-output-limit', 'ai-key', 'ai-clear-key',
