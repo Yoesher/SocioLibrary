@@ -15,7 +15,7 @@ from filelock import FileLock, Timeout
 from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import research
+from . import catalog_semantic, research
 from .ai_routes import attach_ai
 from .config import allowed_roots
 from .jobs import Jobs
@@ -29,6 +29,7 @@ from .service import build_configured_embeddings, sync_zotero
 from .software_updates import UpdateError, UpdateManager
 from .subscriptions import apply_feeds, configure_feed
 from .upgrades import upgrade_status
+from .workbench_routes import attach_workbench
 
 
 class Query(BaseModel):
@@ -156,6 +157,8 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
 
     attach_ai(app, store, authorize, mutate, workspace=ai_workspace)
     attach_literature(app, store, config, authorize, mutate, embedder)
+    attach_workbench(app, store, authorize, mutate)
+    catalog_semantic.initialize(store)
 
     @app.get("/")
     def home():
@@ -179,7 +182,10 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
         scope = store.state("semantic_scope")
         scope_label = "、".join(config.get("semantic", {}).get("collection_keywords", []))
         scope_progress = None
+        catalog_progress = {"done": 0, "total": 0, "ready": False}
         manifest = Path(model_path) / "sociolit-model.json"
+        if manifest.is_file():
+            catalog_progress = catalog_semantic.status(store, sha256(manifest.read_bytes()).hexdigest())
         if isinstance(scope, dict) and scope.get("label") == scope_label and scope.get("item_ids") and manifest.is_file():
             model_key = sha256(manifest.read_bytes()).hexdigest()
             with store.connect() as db:
@@ -203,7 +209,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
                 "import_incomplete": store.state("import_incomplete", False),
                 "discovery": store.state("last_discovery"), "file_notices": problems, "file_notice_count": problem_count,
                 "pdf_roots_configured": bool(allowed_roots(config)), "semantic_model_ready": (Path(model_path) / "sociolit-model.json").is_file(),
-                "semantic_scope": scope_label, "semantic_progress": scope_progress, "library_busy": library_busy,
+                "semantic_scope": scope_label, "semantic_progress": scope_progress, "catalog_progress": catalog_progress, "library_busy": library_busy,
                 "journals": journals, "job": jobs.snapshot(), "version": __import__("sociolit").__version__,
                 "pdf_roots": [str(p) for p in allowed_roots(config)],
                 "collection_keywords": config.get("semantic", {}).get("collection_keywords", []),
@@ -363,10 +369,15 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
             result = process_ocr(store, allowed_roots(config), body.language, max_pages=body.max_pages, progress=progress)
             store.set_state("ocr_summary", result)
             return result
+        def import_run(progress):
+            from .service import refresh_after_sync
+            result = sync_zotero(store, config, progress=progress)
+            return refresh_after_sync(store, config, result, embedder, model_path, progress)
         actions = {
             "ocr": lambda progress: mutate(lambda: ocr_run(progress)),
-            "import": lambda progress: mutate(lambda: sync_zotero(store, config, progress=progress)),
+            "import": lambda progress: mutate(lambda: import_run(progress)),
             "embed": lambda progress: mutate(lambda: build_configured_embeddings(store, config, embedder(), progress=progress)),
+            "catalog_embed": lambda progress: mutate(lambda: catalog_semantic.build(store, embedder(), progress)),
             "discover": lambda progress: mutate(lambda: discover_due(store, config, force=True)),
             "model": lambda progress: mutate(lambda: prepare_model(model_path)),
         }
@@ -400,11 +411,12 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
     @app.post("/api/search")
     def search(body: Query, x_sociolit_token: str | None = Header(default=None)):
         authorize(x_sociolit_token)
-        if body.mode not in ("fulltext", "semantic", "hybrid"):
+        if body.mode not in ("fulltext", "semantic", "hybrid", "auto"):
             raise HTTPException(400, "Unknown search mode")
         research.remember_search(store, body.model_dump())
         try:
             selected = None
+            search_info = None
             if body.author or body.year:
                 with store.connect() as db:
                     records = db.execute("""SELECT id FROM items
@@ -413,8 +425,24 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
                         (body.author, body.year, body.year)).fetchall()
                 selected = [record["id"] for record in records]
                 if not selected:
-                    return []
-            if body.mode in ("semantic", "hybrid"):
+                    return {"results": [], "search_info": {"message": "作者或年份条件没有匹配书目。", "expanded_queries": []}} if body.mode == "auto" else []
+            if body.mode == "auto":
+                from .crosslanguage import search as multilingual_search
+                def smart_semantic():
+                    ensure_library_available()
+                    model = embedder()
+                    if catalog_semantic.status(store, model.key)["ready"]:
+                        return catalog_semantic.search(store, model, body.query, item_ids=selected), "全库题名、摘要与标签（不含全文）"
+                    scope = active_scope(store, config)
+                    ensure_library_available()
+                    ids = scope["item_ids"] if scope else None
+                    if selected is not None:
+                        ids = list(set(selected).intersection(ids)) if ids is not None else selected
+                        if not ids:
+                            raise RuntimeError("筛选结果不在当前语义试点中；仍检索全库的字词和术语。")
+                    return search_vectors(store, model, body.query, limit=100, item_ids=ids), scope["label"] if scope else "全部已建立索引的资料"
+                rows, search_info = multilingual_search(store, body.query, selected, smart_semantic)
+            elif body.mode in ("semantic", "hybrid"):
                 scope = active_scope(store, config)
                 ensure_library_available()
                 ids = scope["item_ids"] if scope else None
@@ -456,7 +484,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
             row["source_digest"] = chunk_digest(row)
             row.pop("source", None)
             row["pdf_url"] = "/api/pdf/" + quote(row["file_id"], safe="") + "#page=" + str(row["page"]) if row["file_id"] and row["page"] else None
-        return rows
+        return {"results": rows, "search_info": search_info} if body.mode == "auto" else rows
 
     @app.get("/api/pdf/{file_id:path}")
     def pdf(file_id: str):

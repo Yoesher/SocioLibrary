@@ -277,9 +277,15 @@ def main():
                 assert client.get(url + "/static/app.js").status_code == 200
                 assert client.get(url + "/static/ai.js").status_code == 200
                 assert client.get(url + "/static/literature.js").status_code == 200
+                assert client.get(url + "/static/graph.js").status_code == 200
+                assert client.get(url + "/static/appearance.css").status_code == 200
+                assert client.get(url + "/static/workbench.js").status_code == 200
                 assert len(client.get(url + "/api/comparisons", headers={"X-Sociolit-Token": status["token"]}).json()) == 1
                 assert client.get(url + "/api/annotations?include_missing=true",
                     headers={"X-Sociolit-Token": status["token"]}).json()["total"] == 1
+                assert client.get(url + "/api/appearance", headers={"X-Sociolit-Token": status["token"]}).json()["theme"] == "ink"
+                assert len(client.post(url + "/api/graph", json={"seed": "synthetic:item", "include_auto": False},
+                    headers={"X-Sociolit-Token": status["token"]}).json()["edges"]) == 1
                 ai_response = client.get(url + "/api/ai/profiles", headers={"X-Sociolit-Token": status["token"]})
                 assert ai_response.status_code == 200
                 assert ai_response.json()["profiles"][0]["has_key"]

@@ -26,8 +26,11 @@ def save_preferences(config, directory, roots, keywords):
             raise ValueError("请选择 Zotero storage 等具体文件夹，不要选择整个磁盘。")
         if str(path) not in clean:
             clean.append(str(path))
-    settings = {"pdf_roots": clean, "collection_keywords": [x.strip() for x in keywords if x.strip()]}
     path = Path(directory) / "preferences.json"
+    settings = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    if not isinstance(settings, dict):
+        raise ValueError("本机设置格式无效，未覆盖。")
+    settings.update(pdf_roots=clean, collection_keywords=[x.strip() for x in keywords if x.strip()])
     temp = path.with_suffix(".tmp")
     temp.write_text(json.dumps(settings, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(temp, path)

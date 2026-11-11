@@ -31,7 +31,8 @@ def seed_upgrade_fixture(directory):
     store.set_state("journal-feed:人口学刊", {"url": "https://example.org/synthetic-feed", "enabled": False})
     research.save_search(store, "Synthetic saved search", {"query": "upgrade", "mode": "fulltext", "author": "", "year": ""})
     research.save_note(store, "Synthetic reading note", "Synthetic note survives upgrade", {"text": "synthetic excerpt", "page": 1})
-    preferences = {"pdf_roots": [str(directory.resolve())], "collection_keywords": ["生育演示"]}
+    preferences = {"pdf_roots": [str(directory.resolve())], "collection_keywords": ["生育演示"],
+                   "theme": "ink", "motion": "quick", "density": "compact", "auto_embed": False}
     (directory / "preferences.json").write_text(json.dumps(preferences, ensure_ascii=False), encoding="utf-8")
     model = directory / "models" / "e5-small"
     model.mkdir(parents=True)
@@ -64,6 +65,15 @@ def _seed_reading_extensions(store):
     board = comparisons.create(store, "Synthetic retained comparison", selections)
     board["cells"]["P1"]["question"] = {"text": "Retained synthetic comparison", "citations": ["S1"], "reviewed": True}
     comparisons.save(store, board["id"], board["revision"], board["title"], board["cells"])
+    from . import graph
+    graph.initialize(store)
+    graph.create_link(store, "synthetic:item", "synthetic:gone", "theory", "Synthetic retained graph relation")
+    from . import catalog_semantic
+    catalog_semantic.initialize(store)
+    with store.connect() as db:
+        row = db.execute("SELECT title,metadata FROM items WHERE id='synthetic:item'").fetchone()
+        db.execute("INSERT INTO catalog_vectors VALUES(?,?,?,?)", ("synthetic:item", "synthetic-catalog",
+                   catalog_semantic.fingerprint(catalog_semantic.content(row)), "[1.0,0.0]"))
     with store.connect() as db:
         db.execute("DELETE FROM items WHERE id='synthetic:gone'")
 
@@ -80,6 +90,8 @@ def check_upgrade_fixture(directory, store):
     assert (directory / "models/e5-small/synthetic-model.txt").read_text(encoding="utf-8").startswith("Synthetic model")
     preferences = json.loads((directory / "preferences.json").read_text(encoding="utf-8"))
     assert preferences["collection_keywords"] == ["生育演示"]
+    assert preferences["theme"] == "ink" and preferences["motion"] == "quick"
+    assert preferences["density"] == "compact" and preferences["auto_embed"] is False
     marker = json.loads((directory / "desktop-version.json").read_text(encoding="utf-8"))
     assert marker["previous_version"] == "0.3.0" and marker["inherited"]
     with sqlite3.connect(directory / marker["backup"] / "library.sqlite3") as db:
@@ -98,5 +110,11 @@ def check_upgrade_fixture(directory, store):
     with sqlite3.connect(directory / marker["backup"] / "library.sqlite3") as db:
         assert db.execute("SELECT count(*) FROM zotero_annotations").fetchone()[0] == 1
         assert db.execute("SELECT count(*) FROM literature_comparisons").fetchone()[0] == 1
+        assert db.execute("SELECT count(*) FROM literature_links").fetchone()[0] == 1
+        assert db.execute("SELECT count(*) FROM catalog_vectors").fetchone()[0] == 1
+    from . import graph
+    network = graph.build(store, seed="synthetic:item", include_auto=False)
+    assert len(network["edges"]) == 1 and any(not node["current"] for node in network["nodes"])
     return {"data_inherited": True, "snapshot_verified": True, "from_version": "0.3.0",
-            "comparison_inherited": True, "annotation_snapshot_inherited": True}
+            "comparison_inherited": True, "annotation_snapshot_inherited": True,
+            "graph_inherited": True, "appearance_inherited": True, "catalog_index_inherited": True}

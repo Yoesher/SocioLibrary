@@ -18,6 +18,7 @@
     for (const [id, controls] of selectionControls) for (const box of controls) box.checked = selected.has(id);
   }
   window.resetAIControls = () => selectionControls.clear();
+  window.openOrganizingTask = () => {showView('ai-view');el('ai-task').value='organize';el('ai-question').value='请按文献分别整理主题标签、研究问题、理论、方法和对象，给出片段出处；缺少依据写材料未提供。只生成待核对建议。';invalidate();loadProfiles();};
   window.enhanceAIResult = (box, source) => {
     const label = document.createElement('label'); label.className = 'inline-label ai-source-select';
     const check = document.createElement('input'); check.type = 'checkbox'; check.checked = selected.has(source.id);
@@ -30,7 +31,7 @@
       if (check.checked) selected.set(source.id, source); else selected.delete(source.id);
       updateSelection();
     };
-    label.append(check, document.createTextNode('用于 AI 阅读（发送前可预览）')); box.append(label);
+    label.append(check, document.createTextNode('用于 AI 阅读或整理（发送前可预览）')); box.append(label);
   };
   async function loadProfiles(keep = '') {
     try {

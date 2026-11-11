@@ -42,6 +42,7 @@ class Store:
               model TEXT NOT NULL, embedding TEXT NOT NULL, PRIMARY KEY(chunk_id,model));
             CREATE TABLE IF NOT EXISTS state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS chunks_item_idx ON chunks(item_id);
+            CREATE INDEX IF NOT EXISTS chunks_file_idx ON chunks(file_id);
             CREATE INDEX IF NOT EXISTS files_item_idx ON files(item_id);
             CREATE INDEX IF NOT EXISTS vectors_model_idx ON vectors(model,chunk_id);
             PRAGMA user_version=1;

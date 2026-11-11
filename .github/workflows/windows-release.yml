@@ -37,7 +37,7 @@ jobs:
             throw 'Frozen smoke test failed'
           }
           Get-Content "$data/smoke-result.json"
-      - name: Verify installation over v0.5.0 and in-app update handoff
+      - name: Verify installation over v0.6.0 and in-app update handoff
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
