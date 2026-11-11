@@ -78,10 +78,8 @@ class DesktopAPI:
             return {'opened': False, 'message': '此附件不是从当前 Zotero 个人库导入，请使用本机 PDF 预览。'}
         if os.name != 'nt':
             return {'opened': False, 'message': 'Zotero 客户端跳转目前支持 Windows。'}
-        try:
-            os.startfile(target['zotero_url'])
-        except OSError as exc:
-            raise ValueError('未能打开 Zotero，请确认已安装 Zotero 且能正常启动。') from exc
+        from .zotero_launcher import launch
+        launch(target['zotero_url'])
         return {'opened': True}
 
     def update_context(self):

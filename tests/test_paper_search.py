@@ -111,7 +111,7 @@ def test_backmatter_is_a_ranking_signal_not_an_index_deletion():
 def test_native_opener_uses_only_registered_attachment_not_arbitrary_uri(library, monkeypatch):
     store, _, _ = library
     opened = []
-    monkeypatch.setattr('sociolit.desktop.os.startfile', opened.append, raising=False)
+    monkeypatch.setattr('sociolit.zotero_launcher.launch', opened.append)
     monkeypatch.setattr('sociolit.desktop.os.name', 'nt')
     bridge = DesktopAPI()
     bridge._store = store
