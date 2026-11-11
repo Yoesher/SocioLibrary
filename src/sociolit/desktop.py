@@ -297,6 +297,12 @@ def main():
                 assert client.get(url + "/static/workbench.js").status_code == 200
                 assert client.get(url + '/static/design-studio.js').status_code == 200
                 assert client.get(url + '/static/design-system.css').status_code == 200
+                assert client.get(url + '/static/graph-core.js').status_code == 200
+                assert client.get(url + '/static/graph-studio.css').status_code == 200
+                expansion = client.post(url + '/api/graph/expand',
+                    headers={'X-Sociolit-Token': status['token']},
+                    json={'seed': 'synthetic:item', 'known_ids': ['synthetic:item'], 'include_auto': False})
+                assert expansion.status_code == 200 and expansion.json()['added_ids'] == []
                 assert client.get(url + '/api/appearance', headers={'X-Sociolit-Token': status['token']}).json()['design'] == 'apple'
                 assert len(client.get(url + "/api/comparisons", headers={"X-Sociolit-Token": status["token"]}).json()) == 1
                 assert client.get(url + "/api/annotations?include_missing=true",

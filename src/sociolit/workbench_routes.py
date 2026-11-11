@@ -28,6 +28,14 @@ class Link(BaseModel):
     note: str = Field(default='', max_length=1000)
 
 
+class GraphExpansion(BaseModel):
+    seed: str = Field(min_length=1, max_length=1000)
+    known_ids: list[str] = Field(max_length=80)
+    limit: int = Field(default=8, ge=1, le=12)
+    include_auto: bool = True
+    include_archived: bool = False
+
+
 class ArchiveLink(BaseModel):
     identity: str = Field(min_length=32, max_length=32)
     revision: str = Field(min_length=32, max_length=32)
@@ -73,6 +81,13 @@ def attach_workbench(app, store, authorize, mutate):
     def link_create(body: Link, x_sociolit_token: str | None = Header(default=None)):
         authorize(x_sociolit_token)
         return write(lambda: graph.create_link(store, body.source, body.target, body.kind, body.note))
+
+    @app.post('/api/graph/expand')
+    def graph_expand(body: GraphExpansion, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        if app.state.jobs.snapshot()['state'] == 'running':
+            raise HTTPException(409, '请在资料任务完成后展开图谱。')
+        return mutate(lambda: graph.expand_neighbors(store, **body.model_dump()))
 
     @app.post('/api/graph/links/archive')
     def link_archive(body: ArchiveLink, x_sociolit_token: str | None = Header(default=None)):

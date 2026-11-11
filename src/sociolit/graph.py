@@ -1,4 +1,5 @@
 """Local explanatory relationships; inferred links are never citation assertions."""
+import hashlib
 import json
 import math
 import re
@@ -86,6 +87,65 @@ def catalog(store, query='', limit=30):
     return values
 
 
+def overview_order(nodes, links, boards, include_auto):
+    """Prefer connected reading material over an alphabetical slice of the library.
+
+    Title comparisons are bounded to 240 recent entries, not the whole library.
+    These scores choose a view only; actual edges still require their own evidence.
+    """
+    degree = Counter()
+    adjacency = {}
+
+    def connect(left, right, weight):
+        if left == right or left not in nodes or right not in nodes:
+            return
+        degree[left] += weight
+        degree[right] += weight
+        adjacency.setdefault(left, Counter())[right] += weight
+        adjacency.setdefault(right, Counter())[left] += weight
+
+    for link in links[:1000]:
+        connect(link['source_id'], link['target_id'], 200)
+    def year(key):
+        match = re.search(r'\d{4}', str(nodes[key].get('year', '')))
+        return int(match[0]) if match else 0
+    if include_auto:
+        for board in boards:
+            ids = [p['id'] for p in json.loads(board['body_json'])['papers'] if p['id'] in nodes]
+            for left, right in zip(ids, ids[1:], strict=False):
+                connect(left, right, 40)
+        tagged = {}
+        for key, item in nodes.items():
+            for tag in set(item['tags']):
+                if tag.strip():
+                    tagged.setdefault(tag, []).append(key)
+        for ids in tagged.values():
+            # A broad tag is useful for ordering, but must not produce O(N²) work.
+            ordered = sorted(ids, key=lambda key: (-year(key), key))[:80]
+            for left, right in zip(ordered, ordered[1:], strict=False):
+                connect(left, right, 12)
+        pool = sorted(nodes, key=lambda key: (-year(key), nodes[key]['title'], key))[:240]
+        terms = {key: title_terms(nodes[key]['title']) for key in pool}
+        frequency = Counter(t for value in terms.values() for t in value)
+        useful = {t for t, count in frequency.items() if 1 < count <= max(2, len(pool) * .3)}
+        for i, left in enumerate(pool):
+            for right in pool[i+1:]:
+                common = terms[left] & terms[right] & useful
+                if len(common) >= 2 or any(' ' in t or t.startswith('术语:') for t in common):
+                    connect(left, right, 1)
+    order = sorted(nodes, key=lambda key: (-degree[key], -year(key), nodes[key]['title'], key))
+    result, seen = [], set()
+    for key in order:
+        if key not in seen:
+            result.append(key)
+            seen.add(key)
+        for neighbor in sorted(adjacency.get(key, {}), key=lambda n: (-adjacency[key][n], -degree[n], n)):
+            if neighbor not in seen:
+                result.append(neighbor)
+                seen.add(neighbor)
+    return result
+
+
 def build(store, query='', seed='', limit=50, include_auto=True, include_archived=False):
     if not 10 <= limit <= 80 or len(query) > 200 or len(seed) > 1000:
         raise ValueError('图谱最多80篇；检索条件无效。')
@@ -128,7 +188,14 @@ def build(store, query='', seed='', limit=50, include_auto=True, include_archive
             if not terms or any(term and term in text for term in terms):
                 selected.append(key)
         if query:
-            selected.sort(key=lambda key: (query.casefold() not in (all_nodes[key]['title'] + ' ' + ' '.join(all_nodes[key]['tags'])).casefold(), all_nodes[key]['title']))
+            selected = overview_order({key: all_nodes[key] for key in selected}, links, boards, include_auto)
+            # Exact-language matches stay ahead of expansion terms; keep the
+            # evidence-based order within each group rather than alphabetizing.
+            selected.sort(key=lambda key: query.casefold() not in
+                          (all_nodes[key]['title'] + ' ' + ' '.join(all_nodes[key]['tags'])).casefold())
+        else:
+            selected = overview_order(all_nodes, links, boards, include_auto)
+    available_nodes = len(set(selected))
     selected = list(dict.fromkeys(selected))[:limit]
     edges, counts = [], Counter()
     for link in links[:1000]:
@@ -196,10 +263,32 @@ def build(store, query='', seed='', limit=50, include_auto=True, include_archive
                         edges.append({'id': 'board:' + board['id'] + ':' + str(index) + ':' + right,
                                       'source': left, 'target': right, 'origin': 'comparison',
                                       'label': '同一比较表：' + board['title']})
+    for edge in edges:
+        if edge['origin'] != 'manual':
+            pair = sorted((edge['source'], edge['target']))
+            identity = json.dumps([edge['origin'], *pair, edge['label']], ensure_ascii=False)
+            edge['id'] = 'auto:' + hashlib.sha256(identity.encode()).hexdigest()[:24]
     return {'nodes': [all_nodes[key] for key in selected], 'edges': edges, 'seed': seed,
-            'total_items': len(all_items), 'limited': len(selected) == limit, 'types': TYPES,
+            'total_items': len(all_items), 'limited': available_nodes > limit, 'types': TYPES,
             'links_limited': len(links) > 1000,
             'message': '共享标签、题名字词、已有书目语义索引和同一比较表提供自动线索；实线为本人建立的关系。自动连线不表示引用或结论一致。'}
+
+
+def expand_neighbors(store, seed, known_ids, limit=8, include_auto=True, include_archived=False):
+    """Read-only expansion. Existing canvas entries are never evicted for new ones."""
+    if (not 1 <= limit <= 12 or len(known_ids) > 80 or seed not in known_ids
+            or any(not isinstance(key, str) or not key or len(key) > 1000 for key in known_ids)):
+        raise ValueError('请选择当前图中的文献；最多80篇，每次展开1至12篇。')
+    known = set(known_ids)
+    network = build(store, seed=seed, limit=80, include_auto=include_auto, include_archived=include_archived)
+    candidates = [n for n in network['nodes'] if n['id'] not in known]
+    added = candidates[:min(limit, 80-len(known))]
+    allowed = known | {n['id'] for n in added}
+    network['nodes'] = [n for n in network['nodes'] if n['id'] in allowed]
+    network['edges'] = [e for e in network['edges'] if e['source'] in allowed and e['target'] in allowed]
+    network.update(added_ids=[n['id'] for n in added], more=len(candidates) > len(added),
+                   capacity_reached=len(allowed) >= 80)
+    return network
 
 
 def duplicates(store):
