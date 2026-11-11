@@ -31,6 +31,7 @@ jobs:
           python -c "import platform; assert platform.machine() == '${{ matrix.arch }}'"
           python -m pytest -q --ignore=tests/test_paper_search.py --ignore=tests/test_upgrades.py --ignore=tests/test_desktop_features.py --ignore=tests/test_zotero_launcher.py
           python -m ruff check src tests scripts
+          node --test tests/js/graph-core.test.cjs tests/js/workspace-updates.test.cjs
           python scripts/check_public_files.py
       - name: Build application and packages
         run: python scripts/build_macos.py

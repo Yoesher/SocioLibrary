@@ -14,6 +14,7 @@ async function refresh(){if(window.isSoftwareInstalling&&window.isSoftwareInstal
  if(s.platform==='darwin'&&!s.semantic_runtime){for(const o of el('mode').options){if(['semantic','hybrid'].includes(o.value))o.disabled=true;}el('auto-embed').disabled=true;el('model').disabled=true;el('embed').disabled=true;el('catalog_embed').disabled=true;el('model-status').textContent='Intel Mac 预览版暂未打包语义模型运行环境；可使用全文和中英词语扩展检索。';}
  if(s.platform==='darwin'){el('ocr').disabled=true;el('ocr-languages').disabled=true;el('ocr-status').textContent='Mac 预览版尚未接入扫描页 OCR，已有文字层的 PDF 可直接检索。';}
  el('model-status').textContent=s.platform==='darwin'&&!s.semantic_runtime?'Intel Mac 预览版暂不提供本地语义环境；全文及中英词语扩展检索可用。':s.semantic_model_ready?'模型已就绪':'尚未下载';
+ el('library-location').textContent='当前资料目录：'+(s.data_directory||'请使用桌面版查看');
  el('upgrade-status').textContent=s.upgrade&&s.upgrade.inherited?(s.upgrade.backup_ready?'已沿用旧资料库。升级前的数据库和设置备份保存在资料文件夹 backups 中。':'已沿用原资料库。'):'新版覆盖安装会沿用此资料目录；无需重新导入或下载已有模型。';
  if(!settingsLoaded){el('roots').value=(s.pdf_roots||[]).join('\n');el('keywords').value=(s.collection_keywords||[]).join(',');settingsLoaded=true;}
  el('setup-card').hidden=s.pdf_roots_configured||Boolean(s.last_import);

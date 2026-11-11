@@ -27,7 +27,9 @@ def native_install_context():
                 registered = Path(value).resolve()
     except OSError:
         pass
-    installed = registered == current
+    # A packaged launcher may see a different registry hive. Inno's own files
+    # identify the existing installation without sending it to a second folder.
+    installed = registered == current or all((current / name).is_file() for name in ('unins000.exe', 'unins000.dat'))
     target = current if installed else registered or Path(os.environ["LOCALAPPDATA"]) / "Programs/SocioLibrary"
     return {"supported": True, "mode": "installed" if installed else "portable",
             "target": str(target), "message": "" if installed else "免安装版将升级为安装版，原资料目录保持不变。"}

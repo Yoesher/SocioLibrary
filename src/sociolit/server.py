@@ -254,7 +254,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None, native_cocoa=F
             except ValueError:
                 homepage = ""
             journals.append(dict(journal, homepage=homepage))
-        return {"semantic_runtime": importlib.util.find_spec("sentence_transformers") is not None, "platform": sys.platform, "stats": store.stats(), "token": token, "last_import": last_import,
+        return {"semantic_runtime": importlib.util.find_spec("sentence_transformers") is not None, "platform": sys.platform, "data_directory": str(store.path.resolve().parent), "stats": store.stats(), "token": token, "last_import": last_import,
                 "import_incomplete": store.state("import_incomplete", False),
                 "discovery": store.state("last_discovery"), "file_notices": problems, "file_notice_count": problem_count,
                 "pdf_roots_configured": bool(allowed_roots(config)), "semantic_model_ready": (Path(model_path) / "sociolit-model.json").is_file(),

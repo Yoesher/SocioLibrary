@@ -137,12 +137,36 @@
   }
   window.addEventListener('pywebviewready', attachNative); attachNative();
 
-  async function installReady() {
+  let blockerSignature = '';
+  function upgradeBlockers() {
+    const rows = [], add = (key, active, label, view) => {if(active)rows.push({key,label,view});};
+    add('note',noteDirty,'阅读笔记有未保存修改','research-view');
+    add('preferences',preferencesDirty(),'资料目录或试点设置尚未保存','settings-view');
+    add('appearance',window.isAppearanceDirty?.(),'界面风格正在预览，尚未保存或取消','settings-view');
+    add('ai',window.isAISettingsDirty?.(),'AI 连接配置有未保存修改','ai-view');
+    add('comparison',window.isLiteratureDirty?.(),'文献对照表、对照篮或 AI 草稿尚待处理','literature-view');
+    add('graph',window.isGraphDirty?.()||window.isGraphNotebookDirty?.(),'文献关系或研究图谱名称尚未保存','graph-view');
+    add('journal',window.isJournalDirty?.(),'期刊来源正在编辑，尚未保存或取消','journals-view');
+    add('busy',exporting||searchBusy||window.isAIBusy?.()||window.isLiteratureBusy?.()||window.isJournalBusy?.()||window.isGraphBusy?.()||libraryStatus?.library_busy||libraryStatus?.job?.state==='running','正在检索、导出、同步或处理资料，请等待完成','');
+    return rows;
+  }
+  window.getUpgradeBlockers = upgradeBlockers;
+  function showUpgradeBlockers(rows, focus=false) {
+    const panel=el('software-blockers'), list=el('software-blockers-list');
+    panel.hidden=!rows.length;
+    const signature=rows.map(r=>r.key).join(',');
+    if(signature!==blockerSignature){
+      blockerSignature=signature;list.replaceChildren();
+      for(const row of rows){const item=document.createElement('li'), label=document.createElement('span');label.textContent=row.label;item.append(label);
+        if(row.view){const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='前往处理';button.onclick=()=>{showView(row.view);document.querySelector(`[data-view="${row.view}"]`)?.click();};item.append(button);}list.append(item);}
+    }
+    if(focus&&rows.length)panel.scrollIntoView({behavior:'auto',block:'center'});
+  }
+  async function installReady(focus=false) {
     if (installing || !updateContext || !updateContext.supported) return;
-    if (exporting || noteDirty || preferencesDirty() || searchBusy || (window.isAIBusy && window.isAIBusy()) || (window.isLiteratureBusy && window.isLiteratureBusy()) ||
-        (window.isGraphNotebookDirty && window.isGraphNotebookDirty()) || (window.isJournalBusy && window.isJournalBusy()) || (window.isJournalDirty && window.isJournalDirty()) || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty()) || libraryStatus.library_busy ||
-        libraryStatus.job.state === 'running') {
-      el('software-progress-text').textContent = '更新包已就绪，等待保存笔记和设置、结束当前任务；也可选择稍后安装。';
+    const blockers=upgradeBlockers();showUpgradeBlockers(blockers,focus);
+    if (blockers.length) {
+      el('software-progress-text').textContent = '更新包已下载并核对。请处理下方列出的内容，再安装；现有编辑内容继续保留。';
       return;
     }
     installing = true; el('software-upgrade').disabled = true;
@@ -156,18 +180,16 @@
   async function beginUpgrade() {
     showView('software-view');
     if(updateContext?.mode==='macos'){await window.pywebview.api.open_releases();return;}
-    if (noteDirty || preferencesDirty() || (window.isGraphNotebookDirty && window.isGraphNotebookDirty()) || (window.isJournalBusy && window.isJournalBusy()) || (window.isJournalDirty && window.isJournalDirty()) || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty())) { notice('请先保存笔记、对照表、资料与 AI 设置，并处理对照篮或草稿，再开始升级。', true); return; }
     if (!updateState || !updateState.available_version) return;
     installIntent = Boolean(updateContext && updateContext.supported);
-    if (updateState.state === 'ready') { await installReady(); return; }
+    if (updateState.state === 'ready') { await installReady(true); return; }
+    if(['checking','downloading'].includes(updateState.state))return;
+    showUpgradeBlockers([],false);notice('正在准备下载更新包；你可以继续编辑，安装前会再检查保存状态。');
     try { await api('/api/software-update/download'); await refresh(); }
     catch (error) { installIntent = false; notice(error.message, true); }
   }
   el('software-upgrade').onclick = beginUpgrade;
-  el('software-banner-go').onclick = () => {
-    if (updateContext && updateContext.mode === 'installed') beginUpgrade();
-    else showView('software-view');
-  };
+  el('software-banner-go').onclick = beginUpgrade;
   el('software-later').onclick = () => {installIntent = false; el('software-later').hidden = true;
     notice('将保留下载包，等你点击“安装并重启”再升级。');};
   el('software-check').onclick = async () => {
@@ -215,6 +237,7 @@
     el('software-banner').hidden = !available;
     el('software-banner-text').textContent = '发现新版本 ' + s.available_version + '；升级后自动沿用原库与设置。';
     el('software-banner-go').disabled = busy;
+    el('software-banner-go').textContent = updateContext?.mode==='macos'?'打开 Mac 下载页':updateContext?.mode==='portable'?'下载并升级为安装版':s.state==='ready'?'安装并重启':'下载并升级';
     if (s.state === 'error') installIntent = false;
     if (s.state === 'ready' && installIntent) installReady();
   };

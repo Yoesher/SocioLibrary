@@ -93,3 +93,9 @@ Responses、兼容 Chat、Messages 各自构造请求和提取文本及有限的
 本版面向单用户本机。PDF 提取在进程内完成，100 MiB 文件/3000 页/单页内容检查只是常规限制，不能防止所有压缩炸弹或恶意 PDF 的内存耗尽；只处理可信、合法取得的文件。页面服务没有多用户隔离，不适合直接部署公网。全量元数据扫描、逐文件哈希、SQLite 中 JSON 向量的线性比对不是百万篇文献的方案。
 
 0.7新增 `catalog_vectors`（每书目一个本机多语言向量）及 `literature_links`（人工关系和来源快照）。全文试点向量继续独立；智能检索融合离线术语、全库书目语义或已建全文试点，并向界面返回覆盖范围。人工边与标签、题名、语义、比较表候选边分开呈现，只有人工边持久化。外观与自动补齐选项沿用原备份的 `preferences.json`。详见[工作台说明](v0.7-workbench.md)。
+
+## 跨启动器资料位置（0.12.1）
+
+Windows AppData 可能被有包身份的启动器重定向，目录本身与数据库文件可能解析到不同物理位置。桌面入口解析现有数据库文件的实际父目录，在用户主目录的 `.sociolibrary/desktop-location.json` 中记录，兼容旧指针，并在原库失联时停止。未保存内容只阻止退出安装，不阻止下载；具体待办由前端列出并链接到相应编辑区。
+
+依据：[Microsoft MSIX 文件与注册表重定向](https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes)。

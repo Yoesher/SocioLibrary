@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from hashlib import sha256
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -132,6 +133,7 @@ def test_remembers_custom_folder_respects_overrides_and_never_silently_replaces_
     profile = tmp_path / "profile"
     profile.mkdir()
     monkeypatch.setenv("LOCALAPPDATA", str(profile))
+    monkeypatch.setattr(Path, 'home', lambda: profile)
     monkeypatch.delenv("SOCIOLIT_DATA_DIR", raising=False)
     assert resolve_desktop_directory() == profile / "SocioLit"
     custom = tmp_path / "custom"

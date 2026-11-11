@@ -64,7 +64,7 @@
     try{const result=await api('/api/appearance',values());saved={...result};sync(result);dirty=false;el('appearance-cancel').disabled=true;el('appearance-state').textContent='已保存整套界面风格，下次打开继续沿用。';}
     catch(error){notice(error.message,true);}finally{button.disabled=false;}
   };
-  window.isAppearanceDirty=()=>dirty;
+  window.isAppearanceDirty=()=>dirty&&(!saved||Object.entries(values()).some(([key,value])=>saved[key]!==value));
   window.loadAppearance=async()=>{
     if(loaded||!token)return;loaded=true;
     try{const response=await fetch('/api/appearance',{headers:{'X-Sociolit-Token':token}});if(!response.ok)throw Error('读取外观设置失败');saved={design:'apple',...await response.json()};if(!dirty)sync(saved);el('appearance-cancel').disabled=!dirty;}

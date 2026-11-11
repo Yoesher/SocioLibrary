@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import sqlite3
+import sys
 import tempfile
 import time
 import uuid
@@ -55,28 +56,46 @@ def resolve_desktop_directory(explicit=None):
     from .config import default_data_dir
 
     if explicit or os.environ.get("SOCIOLIT_DATA_DIR"):
-        return Path(explicit).expanduser().resolve() if explicit else default_data_dir()
+        return physical_directory(Path(explicit).expanduser() if explicit else default_data_dir())
     pointer = location_file()
+    if not pointer.is_file():
+        pointer = legacy_location_file()
     if pointer.is_file():
         value = _read(pointer).get("data_dir")
         if (not isinstance(value, str) or not Path(value).is_absolute() or not Path(value).is_dir()
                 or not (Path(value) / "library.sqlite3").is_file()):
             raise UpgradeError("之前的资料目录暂时不可用，请先连接原磁盘；不会自动创建空库替代。")
-        return Path(value).resolve()
-    return default_data_dir()
+        return physical_directory(Path(value))
+    return physical_directory(default_data_dir())
 
 
 def location_file():
+    # AppData can be virtualized by a packaged launcher. The shared pointer must
+    # be visible to normal Explorer launches and launcher child processes alike.
+    if sys.platform == 'win32':
+        return Path.home() / '.sociolibrary' / 'desktop-location.json'
+    return legacy_location_file()
+
+
+def legacy_location_file():
     from .config import default_data_dir
 
     base = Path(os.environ.get("LOCALAPPDATA", default_data_dir().parent))
     return base / "SocioLibrary" / "desktop-location.json"
 
 
+def physical_directory(directory):
+    directory = Path(directory)
+    database = directory / 'library.sqlite3'
+    # Resolve the existing file, not its overlaid directory: on MSIX Windows
+    # those can point to different physical locations. Never move or merge data.
+    return database.resolve(strict=True).parent if database.is_file() else directory.resolve()
+
+
 def remember_directory(directory):
     path = location_file()
     path.parent.mkdir(parents=True, exist_ok=True)
-    _write(path, {"data_dir": str(Path(directory).resolve())})
+    _write(path, {"data_dir": str(physical_directory(directory))})
 
 
 def prepare_upgrade(directory, version):
