@@ -183,7 +183,7 @@ def present(store, query, rankings, info, variants):
                 reasons.append('正文命中“' + '、'.join(body_hits[:3]) + '”，可核对下列摘录')
             if not reasons:
                 reasons.append('当前所选文献；暂未发现与查询直接对应的词语' if info.get('selected_paper') else
-                               '由本机语义索引返回的候选文献' if info.get('semantic') else '由字词组合检索返回的候选文献')
+                               '本机检索返回的候选文献，请结合摘要核对主题')
             sentences = [s.strip() for s in re.split(r'(?<=[。！？.!?])\s*', abstract['text']) if 8 <= len(s.strip()) <= 450]
             excerpt = max(sentences, key=lambda s: sum(len(t)**.5 for t in matches(s, values)), default='')
             if excerpt and not matches(excerpt, values):
