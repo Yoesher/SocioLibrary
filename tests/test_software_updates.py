@@ -1,6 +1,5 @@
 import copy
 import hashlib
-import time
 
 import httpx
 import pytest
@@ -250,18 +249,22 @@ def test_checks_are_background_work_and_reject_overlapping_downloads(tmp_path):
 
     def slow(request):
         entered.set()
-        assert release.wait(3)
+        assert release.wait(10)
         return httpx.Response(200, json=metadata())
 
     manager = UpdateManager(
         tmp_path, "0.4.0", factory=lambda: httpx.Client(transport=httpx.MockTransport(slow))
     )
-    start = time.monotonic()
-    manager.check()
-    assert time.monotonic() - start < 1 and entered.wait(1)
-    with pytest.raises(UpdateError, match="正在进行"):
+    try:
         manager.check()
-    release.set()
+        assert entered.wait(5)
+        # The call returned while the request is still blocked. This checks
+        # nonblocking behavior without a one-second runner scheduling deadline.
+        assert not release.is_set() and manager.snapshot()['state'] == 'checking'
+        with pytest.raises(UpdateError, match="正在进行"):
+            manager.check()
+    finally:
+        release.set()
     assert finished(manager)["state"] == "available"
 
 
@@ -446,6 +449,13 @@ def test_windows_helper_acknowledges_readiness_without_running_an_installer(tmp_
         assert result["process"].poll() is None
         assert list((tmp_path / "cache").glob("*.ready.json"))
         assert not result["result_file"].exists()
+    except Exception:
+        # Synthetic fixture only. Keep actual helper failures diagnosable in CI.
+        for diagnostic in (tmp_path / "cache").glob("*.helper.log"):
+            print(diagnostic.read_text(encoding='utf-8-sig', errors='replace'))
+        for diagnostic in (tmp_path / "cache").glob("*.result.json"):
+            print(diagnostic.read_text(encoding='utf-8-sig', errors='replace'))
+        raise
     finally:
         # Keep the parent alive until every helper is terminated: synthetic input is never executed.
         for process in children:
