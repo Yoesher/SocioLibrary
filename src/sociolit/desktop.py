@@ -400,18 +400,31 @@ def main():
             except RuntimeError:
                 pass
         if args.gui_smoke_test:
+            def gui_smoke_result(value):
+                value = value if isinstance(value, dict) else {}
+                result = {key: value.get(key) for key in ('version', 'notebooks', 'inbox')}
+                result['ok'] = (__version__ in str(result['version'])
+                                and result['notebooks'] is True and result['inbox'] is True)
+                (directory / 'gui-smoke-result.json').write_text(json.dumps(result), encoding='utf-8')
+                bridge._window.confirm_close = False
+                bridge._window.destroy()
+            bridge._window.expose(gui_smoke_result)
             def gui_check():
-                def inspect():
-                    try:
-                        value = bridge._window.evaluate_js("({version:document.getElementById('version').textContent, notebooks:!!document.getElementById('graph-view-save'), inbox:!!document.getElementById('journal-inbox-form')})")
-                        value['ok'] = __version__ in value['version'] and value['notebooks'] and value['inbox']
-                        (directory / 'gui-smoke-result.json').write_text(json.dumps(value), encoding='utf-8')
-                    except Exception:
-                        (directory / 'gui-smoke-result.json').write_text('{"ok":false}', encoding='utf-8')
-                    finally:
-                        bridge._window.confirm_close = False
-                        bridge._window.destroy()
-                threading.Timer(4, inspect).start()
+                # run_js avoids evaluate_js's eval wrapper, which our strict CSP rejects on WebKit.
+                bridge._window.run_js("""(function () {
+                    let attempts = 0;
+                    const timer = setInterval(function () {
+                        const version = document.getElementById('version');
+                        if (!window.pywebview || !window.pywebview.api.gui_smoke_result) return;
+                        if ((!version || !version.textContent) && ++attempts < 100) return;
+                        clearInterval(timer);
+                        window.pywebview.api.gui_smoke_result({
+                            version: version ? version.textContent : '',
+                            notebooks: !!document.getElementById('graph-view-save'),
+                            inbox: !!document.getElementById('journal-inbox-form')
+                        });
+                    }, 100);
+                })();""")
             bridge._window.events.loaded += gui_check
         else:
             bridge._window.events.loaded += start_updates

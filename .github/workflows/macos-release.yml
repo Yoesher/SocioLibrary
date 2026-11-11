@@ -43,8 +43,13 @@ jobs:
           exe = './dist/SocioLibrary.app/Contents/MacOS/SocioLibrary'
           for flag, folder, result in [('--smoke-test','sl-mac-smoke','smoke-result.json'),('--gui-smoke-test','sl-mac-gui','gui-smoke-result.json')]:
               data = root / folder
-              subprocess.run([exe, flag, '--data-dir', str(data)], timeout=180, check=True)
-              value = json.loads((data / result).read_text())
+              try:
+                  subprocess.run([exe, flag, '--data-dir', str(data)], timeout=180, check=True)
+                  value = json.loads((data / result).read_text())
+              except Exception:
+                  log = data / 'logs/desktop.log'
+                  if log.exists(): print(log.read_text()[-12000:])
+                  raise
               print(json.dumps(value))
               assert value['ok']
           PY
