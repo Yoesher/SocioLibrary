@@ -71,6 +71,19 @@ def initialize_desktop_library(directory):
 
 
 class DesktopAPI:
+    def open_source(self, file_id, page):
+        from .source_links import locate
+        target = locate(self._store, file_id, page)
+        if not target['zotero_url']:
+            return {'opened': False, 'message': '此附件不是从当前 Zotero 个人库导入，请使用本机 PDF 预览。'}
+        if os.name != 'nt':
+            return {'opened': False, 'message': 'Zotero 客户端跳转目前支持 Windows。'}
+        try:
+            os.startfile(target['zotero_url'])
+        except OSError as exc:
+            raise ValueError('未能打开 Zotero，请确认已安装 Zotero 且能正常启动。') from exc
+        return {'opened': True}
+
     def update_context(self):
         from .update_install import native_install_context
         context = native_install_context()
@@ -277,7 +290,11 @@ def main():
                 assert client.get(url + "/static/app.js").status_code == 200
                 assert client.get(url + "/static/ai.js").status_code == 200
                 assert client.get(url + "/static/literature.js").status_code == 200
-                assert client.get(url + "/static/graph.js").status_code == 200
+                for asset in ('network.js', 'papers.js', 'navigation.js', 'desktop-ui.css', 'cytoscape-3.35.0.min.js', 'cytoscape-LICENSE.txt'):
+                    assert client.get(url + '/static/' + asset).status_code == 200
+                paper_results = client.post(url + '/api/search/papers', json={'query': 'synthetic', 'mode': 'fulltext'},
+                    headers={'X-Sociolit-Token': status['token']}).json()
+                assert paper_results['total'] >= 1 and paper_results['papers'][0]['abstract'] is not None
                 assert client.get(url + "/static/appearance.css").status_code == 200
                 assert client.get(url + "/static/workbench.js").status_code == 200
                 assert len(client.get(url + "/api/comparisons", headers={"X-Sociolit-Token": status["token"]}).json()) == 1

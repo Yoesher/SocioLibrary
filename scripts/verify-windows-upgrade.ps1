@@ -29,9 +29,9 @@ function Run-Setup($exe, $arguments, $mustSucceed = $true) {
     if ($mustSucceed -and $process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
     return $process.ExitCode
 }
-gh release download v0.6.0 --repo $env:GITHUB_REPOSITORY --pattern 'SocioLibrary-0.6.0-Windows-x64-Setup.exe' --dir $root
+gh release download v0.7.0 --repo $env:GITHUB_REPOSITORY --pattern 'SocioLibrary-0.7.0-Windows-x64-Setup.exe' --dir $root
 if ($LASTEXITCODE -ne 0) { throw 'Cannot retrieve previous public installer' }
-$previous = Join-Path $root 'SocioLibrary-0.6.0-Windows-x64-Setup.exe'
+$previous = Join-Path $root 'SocioLibrary-0.7.0-Windows-x64-Setup.exe'
 $common = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-')
 Run-Setup $previous ($common + @("/DIR=`"$installDir`"")) | Out-Null
 $installedExe = Join-Path $installDir 'SocioLibrary.exe'

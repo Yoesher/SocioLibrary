@@ -5,6 +5,7 @@
   let libraryStatus = null, updateState = null, updateContext = null;
   let installIntent = false, installing = false, noteDirty = false, exporting = false;
 
+  window.hasUnsavedNote = () => noteDirty;
   window.resetReadingControls = () => controls.clear();
   function setReadingControls(itemId, state) {
     for (const pair of controls.get(itemId) || []) {

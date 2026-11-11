@@ -78,7 +78,8 @@ def recommend_metadata(store, identity, limit=10):
             continue
         matches = SequenceMatcher(None, seed["title"], candidate["title"], autojunk=False).get_matching_blocks()
         shared = [seed["title"][match.a:match.a+match.size].strip() for match in matches if match.size >= 2]
-        shared = [text for text in shared if text not in STOP][:4]
+        shared = [text for text in shared if text not in STOP and text not in {'的影响', '的研究', '影响因素'}
+                  and len(re.findall(r'[\w\u3400-\u9fff]', text)) >= 2][:4]
         visible = [term for term in overlap if not term.startswith("tag:")]
         reason = "题名共同文字：" + "、".join(shared) if shared else "共同字词片段：" + "、".join(visible[:6])
         if not shared and not visible:

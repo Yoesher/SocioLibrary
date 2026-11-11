@@ -1,12 +1,12 @@
 (() => {
   let loaded = false, dirty = false;
-  const themes = {sage:'竹青',ocean:'海盐蓝',paper:'暖纸',ink:'墨夜',lavender:'紫藤',teal:'松石',rose:'玫瑰',contrast:'高对比',system:'跟随系统'};
+  const themes = {silver:'银白',sage:'竹青',ocean:'海盐蓝',paper:'暖纸',ink:'墨夜',lavender:'紫藤',teal:'松石',rose:'玫瑰',contrast:'高对比',system:'跟随系统'};
   const system = matchMedia('(prefers-color-scheme: dark)');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let current = {theme:'sage',motion:'gentle',density:'comfortable',auto_embed:true};
+  let current = {theme:'silver',motion:'gentle',density:'comfortable',auto_embed:true};
   function apply(values) {
     current = {...values};
-    document.documentElement.dataset.theme = values.theme === 'system' ? (system.matches?'ink':'sage') : values.theme;
+    document.documentElement.dataset.theme = values.theme === 'system' ? (system.matches?'ink':'silver') : values.theme;
     document.documentElement.dataset.motion = reduced.matches?'none':values.motion;
     document.documentElement.dataset.density = values.density;
     document.querySelectorAll('[data-theme-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeChoice===values.theme)));
@@ -15,8 +15,8 @@
   window.animateView = view => {
     document.querySelectorAll('.view').forEach(v=>v.getAnimations().forEach(a=>a.cancel()));
     if (!reduced.matches && current.motion!=='none') view.animate(
-      [{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],
-      {duration:current.motion==='quick'?90:190,easing:'cubic-bezier(.2,.7,.2,1)'});
+      [{opacity:0,transform:'translateY(3px)'},{opacity:1,transform:'translateY(0)'}],
+      {duration:current.motion==='quick'?80:140,easing:'cubic-bezier(.2,.7,.2,1)'});
   };
   window.loadAppearance = async()=>{
     if(loaded || !token)return;

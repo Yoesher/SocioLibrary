@@ -97,6 +97,7 @@ def build(store, query='', seed='', limit=50, include_auto=True, include_archive
     all_nodes = {row['id']: node({**json.loads(row['metadata']), 'id': row['id'], 'title': row['title']}) for row in all_items}
     terms = [query.casefold(), *(term.casefold() for term in expand(query))] if query else []
     selected = []
+    recommendations = []
     if seed:
         if seed not in all_nodes:
             raise ValueError('当前书目中找不到中心文献，请重新选择。')
@@ -111,14 +112,23 @@ def build(store, query='', seed='', limit=50, include_auto=True, include_archive
         neighbors = sorted((key for key in all_nodes if key not in selected),
                            key=lambda key: (-len(tags.intersection(all_nodes[key]['tags'])), all_nodes[key]['title']))
         if include_auto:
+            for board in boards:
+                papers = [p['id'] for p in json.loads(board['body_json'])['papers']]
+                if seed in papers:
+                    selected.extend(key for key in papers if key in all_nodes and key not in selected)
             from .catalog_semantic import graph_candidates
             selected.extend(right for left, right, score in graph_candidates(store, seed=seed) if right not in selected)
+            from .literature import recommend_metadata
+            recommendations = recommend_metadata(store, seed, limit=20)['results']
+            selected.extend(row['id'] for row in recommendations if row['id'] not in selected)
             selected.extend(key for key in neighbors if tags.intersection(all_nodes[key]['tags']))
     else:
         for key, item in all_nodes.items():
             text = (item['title'] + ' ' + ' '.join(item['tags'])).casefold()
             if not terms or any(term and term in text for term in terms):
                 selected.append(key)
+        if query:
+            selected.sort(key=lambda key: (query.casefold() not in (all_nodes[key]['title'] + ' ' + ' '.join(all_nodes[key]['tags'])).casefold(), all_nodes[key]['title']))
     selected = list(dict.fromkeys(selected))[:limit]
     edges, counts = [], Counter()
     for link in links[:1000]:
@@ -126,6 +136,10 @@ def build(store, query='', seed='', limit=50, include_auto=True, include_archive
             edges.append({key: link[key] for key in ('id', 'revision', 'kind', 'note', 'archived')} |
                          {'source': link['source_id'], 'target': link['target_id'], 'origin': 'manual', 'label': TYPES[link['kind']]})
     if include_auto:
+        for row in recommendations:
+            if row['id'] in selected:
+                edges.append({'id': 'metadata:' + row['id'], 'source': seed, 'target': row['id'],
+                              'origin': 'metadata', 'label': '书目共同词语候选：' + '；'.join(row['reasons']), 'score': row['score']})
         pairs = []
         for index, left in enumerate(selected):
             for right in selected[index+1:]:

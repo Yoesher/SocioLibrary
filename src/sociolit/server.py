@@ -160,6 +160,35 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
     attach_workbench(app, store, authorize, mutate)
     catalog_semantic.initialize(store)
 
+    def paper_semantic(query, selected, mode):
+        ensure_library_available()
+        model = embedder()
+        if mode == 'auto' and catalog_semantic.status(store, model.key)['ready']:
+            return catalog_semantic.search(store, model, query, item_ids=selected), '全库题名、摘要与标签（不含全文）'
+        scope = active_scope(store, config)
+        ids = scope['item_ids'] if scope else None
+        if selected is not None:
+            ids = list(set(selected).intersection(ids)) if ids is not None else selected
+            if not ids:
+                raise ValueError('筛选结果未建立语义索引；可使用全文字词检索。')
+        return search_vectors(store, model, query, limit=100, item_ids=ids), scope['label'] if scope else '已建立索引的资料'
+
+    from .paper_search import attach as attach_papers
+    attach_papers(app, store, authorize, paper_semantic)
+
+    class SourceLocation(BaseModel):
+        file_id: str = Field(min_length=1, max_length=1000)
+        page: int = Field(ge=1, le=3000)
+
+    @app.post('/api/source/location')
+    def source_location(body: SourceLocation, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        from .source_links import locate
+        try:
+            return locate(store, body.file_id, body.page)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+
     @app.get("/")
     def home():
         return FileResponse(static / "index.html")

@@ -20,6 +20,40 @@ from sociolit.upgrades import (
 )
 
 
+def test_settings_write_retries_brief_windows_file_contention(tmp_path, monkeypatch):
+    from sociolit import upgrades
+    path = tmp_path / 'settings.json'
+    path.write_text('{"old":true}', encoding='utf-8')
+    replace, attempts = upgrades.os.replace, []
+
+    def blocked_once(source, destination):
+        attempts.append(1)
+        assert path.read_text('utf-8') == '{"old":true}'
+        if len(attempts) == 1:
+            raise PermissionError('Synthetic sharing contention')
+        replace(source, destination)
+
+    monkeypatch.setattr(upgrades.os, 'replace', blocked_once)
+    monkeypatch.setattr(upgrades.time, 'sleep', lambda _: None)
+    upgrades._write(path, {'new': True})
+    assert len(attempts) == 2 and json.loads(path.read_text('utf-8')) == {'new': True}
+
+
+def test_settings_write_keeps_original_on_persistent_access_failure(tmp_path, monkeypatch):
+    from sociolit import upgrades
+    path = tmp_path / 'settings.json'
+    path.write_text('{"old":true}', encoding='utf-8')
+
+    def blocked(*_):
+        raise PermissionError('Synthetic permanent access failure')
+
+    monkeypatch.setattr(upgrades.os, 'replace', blocked)
+    monkeypatch.setattr(upgrades.time, 'sleep', lambda _: None)
+    with pytest.raises(PermissionError):
+        upgrades._write(path, {'new': True})
+    assert json.loads(path.read_text('utf-8')) == {'old': True} and not list(tmp_path.glob('*.tmp'))
+
+
 def test_upgrade_inherits_every_research_table_preferences_model_and_does_not_repeat_backup(tmp_path):
     seed_upgrade_fixture(tmp_path)
     with sqlite3.connect(tmp_path / "library.sqlite3") as before:

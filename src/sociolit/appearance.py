@@ -3,8 +3,8 @@ import json
 import os
 import uuid
 
-THEMES = {'sage', 'ocean', 'paper', 'ink', 'lavender', 'teal', 'rose', 'contrast', 'system'}
-DEFAULTS = {'theme': 'sage', 'motion': 'gentle', 'density': 'comfortable', 'auto_embed': True}
+THEMES = {'silver', 'sage', 'ocean', 'paper', 'ink', 'lavender', 'teal', 'rose', 'contrast', 'system'}
+DEFAULTS = {'theme': 'silver', 'motion': 'gentle', 'density': 'comfortable', 'auto_embed': True}
 
 
 def read(directory):

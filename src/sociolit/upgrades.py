@@ -36,7 +36,16 @@ def _write(path, value):
     temp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
     try:
         temp.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(temp, path)
+        # Windows scanners can briefly hold the destination after a settings read.
+        # Retry only sharing/access contention; never delete the previous file.
+        for attempt in range(6):
+            try:
+                os.replace(temp, path)
+                break
+            except PermissionError:
+                if attempt == 5:
+                    raise
+                time.sleep(.025 * (attempt + 1))
     finally:
         temp.unlink(missing_ok=True)
 
