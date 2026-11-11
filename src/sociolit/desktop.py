@@ -295,6 +295,9 @@ def main():
                 assert paper_results['total'] >= 1 and paper_results['papers'][0]['abstract'] is not None
                 assert client.get(url + "/static/appearance.css").status_code == 200
                 assert client.get(url + "/static/workbench.js").status_code == 200
+                assert client.get(url + '/static/design-studio.js').status_code == 200
+                assert client.get(url + '/static/design-system.css').status_code == 200
+                assert client.get(url + '/api/appearance', headers={'X-Sociolit-Token': status['token']}).json()['design'] == 'apple'
                 assert len(client.get(url + "/api/comparisons", headers={"X-Sociolit-Token": status["token"]}).json()) == 1
                 assert client.get(url + "/api/annotations?include_missing=true",
                     headers={"X-Sociolit-Token": status["token"]}).json()["total"] == 1

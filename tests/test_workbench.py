@@ -125,11 +125,11 @@ def test_appearance_and_existing_preferences_preserve_each_other(library, tmp_pa
     value = {'theme':'ink','motion':'none','density':'compact','auto_embed':False}
     appearance.save(tmp_path,value)
     save_preferences({},tmp_path,[str(tmp_path)],['生育','婚育'])
-    assert appearance.read(tmp_path) == value
+    assert appearance.read(tmp_path) == {**value, 'design': 'apple'}
     assert json.loads((tmp_path/'preferences.json').read_text(encoding='utf-8'))['collection_keywords'] == ['生育','婚育']
 
 
-@pytest.mark.parametrize('key,value',[('theme','invalid'),('motion','bounce'),('density','giant'),('auto_embed','yes')])
+@pytest.mark.parametrize('key,value',[('design','invalid'),('theme','invalid'),('motion','bounce'),('density','giant'),('auto_embed','yes')])
 def test_bad_preferences_do_not_replace_file(library, key, value):
     appearance.save(library.directory, appearance.DEFAULTS)
     previous = (library.directory/'preferences.json').read_bytes()
@@ -137,6 +137,32 @@ def test_bad_preferences_do_not_replace_file(library, key, value):
     with pytest.raises(ValueError):
         appearance.save(library.directory,bad)
     assert (library.directory/'preferences.json').read_bytes() == previous
+
+
+def test_legacy_appearance_defaults_without_rewriting_private_preferences(tmp_path):
+    path = tmp_path / 'preferences.json'
+    path.write_text(json.dumps({'collection_keywords': ['生育'], 'theme': 'ink', 'custom': 42}))
+    before = path.read_bytes()
+    assert appearance.read(tmp_path) == {**appearance.DEFAULTS, 'theme': 'ink'}
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize('design', ['apple', 'fluent', 'material'])
+def test_design_roundtrip_and_legacy_api_preserve_other_settings(library, design):
+    save_preferences({}, library.directory, [str(library.directory)], ['生育'])
+    with TestClient(create_app(library, {}), base_url='http://localhost') as client:
+        headers = {'X-Sociolit-Token': client.get('/api/status').json()['token']}
+        value = {**appearance.DEFAULTS, 'design': design, 'auto_embed': False}
+        assert client.post('/api/appearance', headers=headers, json=value).json() == value
+        # A previous-version client has no design field. It must not reset it.
+        old = {key: val for key, val in value.items() if key != 'design'}
+        old['theme'] = 'ink'
+        result = client.post('/api/appearance', headers=headers, json=old)
+        assert result.status_code == 200 and result.json()['design'] == design
+        assert client.get('/api/appearance', headers=headers).json() == {**value, 'theme': 'ink'}
+    prefs = json.loads((library.directory / 'preferences.json').read_text(encoding='utf-8'))
+    assert prefs['collection_keywords'] == ['生育']
+    assert prefs['pdf_roots'] == [str(library.directory)]
 
 
 def test_workbench_routes_require_authorization_and_origin(library):

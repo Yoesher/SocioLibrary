@@ -1,0 +1,292 @@
+/* Three complete Windows-rendered design languages, independent of the palette.
+   Original CSS and line icons; no proprietary fonts, images or native materials. */
+:root {
+  --shell-width: 232px; --shell-gap: 16px; --content-pad: 32px;
+  --ui-font: 'Segoe UI Variable','Segoe UI','Microsoft YaHei UI',sans-serif;
+  --control-radius: 10px; --panel-radius: 20px; --field-height: 40px;
+  --panel-shadow: 0 8px 32px #14223b08,0 1px 2px #14223b05;
+  --graph-node-shape: ellipse; --graph-node-width: 24; --graph-node-height: 24;
+  --graph-label-size: 12; --graph-edge-width: 1.2;
+}
+[hidden] { display: none !important; }
+html[data-design] { font-family: var(--ui-font); font-size: 14px; }
+html[data-design] body { min-width: 640px; min-height: 100vh; background: var(--bg); }
+html[data-design] .sidebar {
+  width: var(--shell-width); border-radius: var(--panel-radius);
+  padding: 24px 14px 16px; z-index: 30;
+}
+html[data-design] main {
+  margin-left: calc(var(--shell-width) + var(--shell-gap) * 2);
+  padding: 22px var(--content-pad) 40px; max-width: none; min-height: 100vh;
+}
+html[data-design] main > header {
+  position: sticky; top: 12px; z-index: 15; margin: 0 0 20px;
+  padding: 14px 18px; border-radius: var(--panel-radius);
+}
+html[data-design] .card, html[data-design] .result {
+  border-radius: var(--panel-radius); box-shadow: var(--panel-shadow);
+  padding: 25px 28px; margin: 18px 0; overflow-wrap: anywhere;
+}
+html[data-design] h1, html[data-design] h2, html[data-design] h3 { font-family: var(--ui-font); }
+html[data-design] button { min-height: 34px; border-radius: var(--control-radius); padding: 8px 15px; }
+html[data-design] input:not([type=checkbox]):not([type=radio]), html[data-design] select,
+html[data-design] textarea { border-radius: var(--control-radius); min-height: var(--field-height); }
+html[data-design] input[type=checkbox], html[data-design] input[type=radio] { accent-color: var(--accent); }
+html[data-design] .text-button { min-height: 28px; padding: 3px 0; }
+html[data-design] .paper-quick .secondary { min-height: 28px; padding: 3px 0; }
+html[data-design] .paper-heading h3 { font-size: 20px; line-height: 1.65; }
+html[data-design] .paper-section p { font-size: 14px; line-height: 1.95; }
+html[data-design] .paper-section h4 { font-size: 12px; letter-spacing: .3px; }
+html[data-design] .paper-meta, html[data-design] .paper-section small { font-size: 12px; }
+html[data-design] .paper-section .provenance, html[data-design] .page-location { font-size: 11px; }
+html[data-design] .relation-section { padding: 16px 18px; }
+html[data-design] .relation-section p, html[data-design] .relation-section blockquote { font-size: 13px; }
+html[data-design] .evidence-text { font-size: 13px; }
+html[data-design] .source-link { font-size: 13px; }
+html[data-design] .page-chip { min-height: 30px; padding: 5px 13px; }
+html[data-design] .search-row { gap: 10px; }
+html[data-design] .search-row #query { min-height: 46px; padding: 12px 16px; font-size: 15px; }
+html[data-design] .filters input { min-height: 34px; }
+html[data-design] .searchbox h2 { margin-bottom: 16px; }
+html[data-design] .task { border-radius: var(--panel-radius); background: var(--surface); border: 1px solid var(--border); }
+html[data-design] #task-panel[data-state=done] {
+  display: flex; align-items: center; gap: 16px; padding: 11px 16px;
+  margin: 10px 0; box-shadow: none; font-size: 12px;
+}
+html[data-design] #task-panel[data-state=done] .row { width: 100%; }
+html[data-design] #task-panel[data-state=done] progress,
+html[data-design] #task-panel[data-state=done] #task-detail { display: none; }
+html[data-design] #task-panel[data-state=done] strong { font-weight: 500; }
+html[data-design] #task-panel[data-state=done] #task-phase { color: var(--muted); }
+html[data-design] .graph-canvas, html[data-design] .graph-detail { border-radius: var(--panel-radius); }
+html[data-design] .graph-detail { background: var(--surface); }
+html[data-design] .graph-detail h3 { font-size: 16px; }
+html[data-design] .graph-detail p, html[data-design] .graph-relation .text-button { font-size: 12px; }
+html[data-design] body[data-search=results] .stats,
+html[data-design] body:not([data-view=search-view]) .stats { display: none; }
+
+/* macOS-inspired: a floating translucent navigation layer, quiet reading sheets. */
+:root[data-design=apple] {
+  --shell-width: 228px; --shell-gap: 16px; --content-pad: 30px;
+  --control-radius: 11px; --panel-radius: 20px;
+  --panel-shadow: 0 10px 35px #122d4a07,0 1px 3px #122d4a05;
+  --ui-font: -apple-system,BlinkMacSystemFont,'Segoe UI Variable','Segoe UI','Microsoft YaHei UI',sans-serif;
+}
+:root[data-design=apple] body {
+  background: radial-gradient(ellipse at 0 0,color-mix(in srgb,var(--accent) 10%,transparent),transparent 48%),
+              radial-gradient(ellipse at 100% 0,color-mix(in srgb,var(--active) 75%,transparent),transparent 40%),var(--bg);
+}
+:root[data-design=apple] .sidebar {
+  inset: 16px auto 16px 16px;
+  background: color-mix(in srgb,var(--surface) 76%,var(--side));
+  border: 1px solid color-mix(in srgb,var(--surface) 72%,var(--border));
+  box-shadow: 0 12px 45px #1429470a,inset 0 1px 0 color-mix(in srgb,var(--surface) 90%,transparent);
+  backdrop-filter: blur(26px) saturate(1.3);
+}
+:root[data-design=apple] .brand { padding: 0 12px; font-size: 25px; letter-spacing: -.8px; }
+:root[data-design=apple] .brand span { font-size: 19px; }
+:root[data-design=apple] .caption { font-size: 11px; margin: 8px 12px 26px; }
+:root[data-design=apple] .nav { border-radius: 11px; gap: 12px; padding: 11px 13px; margin: 3px 0; font-size: 13px; }
+:root[data-design=apple] .nav.active { background: var(--accent); color: var(--on-accent); box-shadow: 0 3px 9px color-mix(in srgb,var(--accent) 18%,transparent); }
+:root[data-design=apple] .nav.active svg { stroke: var(--on-accent); }
+:root[data-design=apple] .nav-group { margin-bottom: 20px; }
+:root[data-design=apple] .nav-group-label { padding: 0 13px; letter-spacing: .5px; font-size: 10px; }
+:root[data-design=apple] main > header {
+  background: color-mix(in srgb,var(--surface) 84%,transparent);
+  border: 1px solid color-mix(in srgb,var(--surface) 65%,var(--border));
+  backdrop-filter: blur(22px) saturate(1.3); box-shadow: 0 5px 22px #15283e06;
+}
+:root[data-design=apple] header h1 { font-size: 24px; letter-spacing: -.8px; margin: 2px 0 4px; }
+:root[data-design=apple] header .eyebrow { display: none; }
+:root[data-design=apple] header .subtle { font-size: 12px; margin: 0; }
+:root[data-design=apple] .back-button { border-radius: 50%; width: 32px; height: 32px; background: var(--soft); }
+:root[data-design=apple] button:not(.nav):not(.text-button):not(.secondary):not(.design-choice):not(.theme-choice):not(.page-chip) {
+  box-shadow: inset 0 1px 0 #ffffff25,0 2px 4px #00000008;
+}
+:root[data-design=apple] .card, :root[data-design=apple] .result { border-color: color-mix(in srgb,var(--border) 60%,var(--surface)); }
+:root[data-design=apple] .stats { display: flex; gap: 0; border: 0; padding: 7px 6px 14px; margin: 12px 0; }
+:root[data-design=apple] .stat { flex: 1; padding: 0 18px; border-radius: 0; }
+:root[data-design=apple] .stat b { display: inline; font-size: 19px; margin-right: 9px; }
+:root[data-design=apple] .stat span { font-size: 11px; }
+:root[data-design=apple] .searchbox { border: 0; box-shadow: var(--panel-shadow); }
+:root[data-design=apple] .search-row #query { border-radius: 14px; background: var(--soft); border-color: transparent; }
+:root[data-design=apple] .relation-section { border-radius: 14px; background: var(--soft); }
+:root[data-design=apple] .page-chip { border-radius: 18px; border-color: transparent; background: var(--soft); }
+:root[data-design=apple] .page-chip[aria-pressed=true] { background: var(--accent); color: var(--on-accent); }
+:root[data-design=apple] .pagination { gap: 12px; }
+:root[data-design=apple] .paper-number { background: transparent; color: var(--muted); font-size: 12px; padding-left: 0; }
+
+/* Windows 11-inspired: docked navigation, a framed work surface and compact controls. */
+:root[data-design=fluent] {
+  --shell-width: 236px; --shell-gap: 0px; --content-pad: 30px;
+  --control-radius: 5px; --panel-radius: 8px; --field-height: 36px;
+  --panel-shadow: 0 1px 3px #00000007;
+  --graph-node-shape: round-rectangle; --graph-node-width: 38; --graph-node-height: 24;
+  --graph-label-size: 12; --graph-edge-width: 1.1;
+}
+:root[data-design=fluent][data-theme=silver] { --bg:#eef1f6; --side:#e9edf4; --soft:#f6f7fa; --border:#d9dfe9; --active:#e5edf7; }
+:root[data-design=fluent] .sidebar { inset: 0 auto 0 0; border: 0; border-radius: 0; background: var(--side); padding: 30px 12px 18px; box-shadow: inset -1px 0 var(--border); }
+:root[data-design=fluent] .brand { padding: 0 10px; font-size: 24px; }
+:root[data-design=fluent] .brand span { font-size: 18px; }
+:root[data-design=fluent] .caption { margin: 10px 10px 25px; }
+:root[data-design=fluent] .nav { position: relative; border-radius: 5px; padding: 10px 13px; min-height: 40px; margin: 4px 0; color: var(--text); }
+:root[data-design=fluent] .nav.active { background: color-mix(in srgb,var(--surface) 68%,var(--active)); color: var(--text); box-shadow: none; }
+:root[data-design=fluent] .nav.active:before { content:''; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:2px; background:var(--accent); }
+:root[data-design=fluent] .nav.active svg { stroke: var(--accent); }
+:root[data-design=fluent] .nav-group { margin-bottom: 22px; }
+:root[data-design=fluent] main { margin-top: 8px; margin-right: 8px; padding-top: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px 0 0 0; min-height: calc(100vh - 8px); }
+:root[data-design=fluent] main > header { top: 0; border-radius: 0; border: 0; border-bottom: 1px solid var(--border); background: var(--surface); padding: 24px 0 19px; box-shadow: none; backdrop-filter: none; }
+:root[data-design=fluent] header h1 { font-size: 29px; font-weight: 600; margin: 4px 0; letter-spacing: -.5px; }
+:root[data-design=fluent] header .eyebrow { font-size: 11px; letter-spacing: .2px; }
+:root[data-design=fluent] header .subtle { font-size: 12px; }
+:root[data-design=fluent] .card, :root[data-design=fluent] .result { padding: 22px 24px; background: var(--surface); border: 1px solid var(--border); }
+:root[data-design=fluent] .paper-heading h3 { font-size: 19px; font-weight: 600; }
+:root[data-design=fluent] .paper-section h4 { font-size: 12px; font-weight: 600; color: var(--text); }
+:root[data-design=fluent] .relation-section { border-radius: 4px; border-left: 3px solid var(--accent); background: var(--soft); }
+:root[data-design=fluent] .search-row #query { border-radius: 5px; border: 1px solid var(--border); border-bottom: 2px solid var(--muted); background: var(--surface); }
+:root[data-design=fluent] .search-row #query:focus { border-bottom-color: var(--accent); }
+:root[data-design=fluent] .page-chip { border-radius: 4px; background: var(--surface); border: 1px solid var(--border); }
+:root[data-design=fluent] .page-chip[aria-pressed=true] { border-bottom: 3px solid var(--accent); background: var(--active); color: var(--text); }
+:root[data-design=fluent] .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; border:0; margin:20px 0; padding:0; }
+:root[data-design=fluent] .stat { padding:14px 16px; border:1px solid var(--border); border-radius:6px; background:var(--soft); }
+:root[data-design=fluent] .stat b { font-size:23px; display:block; margin-bottom:4px; }
+:root[data-design=fluent] .stat span { font-size:11px; }
+:root[data-design=fluent] .paper-tools { background: var(--soft); padding: 12px 14px; border-radius: 5px; border:0; }
+:root[data-design=fluent] .graph-detail { border-radius: 6px; }
+
+/* Material-inspired: a navigation rail, expressive shapes and tonal containers. */
+:root[data-design=material] {
+  --shell-width: 108px; --shell-gap: 12px; --content-pad: 28px;
+  --control-radius: 24px; --panel-radius: 28px; --field-height: 44px;
+  --panel-shadow: none;
+  --graph-node-shape: round-rectangle; --graph-node-width: 34; --graph-node-height: 30;
+  --graph-label-size: 13; --graph-edge-width: 1.6;
+}
+:root[data-design=material][data-theme=silver] { --bg:#f5f2fa; --side:#ece5f6; --soft:#f1ebf7; --border:#ddd5e7; --text:#26212d; --muted:#655d70; --accent:#66508c; --accent-hover:#503c72; --accent-text:#584278; --active:#e4d6f5; --focus:#66508c; }
+:root[data-design=material] .sidebar { inset: 12px auto 12px 12px; border:0; border-radius:30px; background:var(--side); padding:16px 6px 12px; }
+:root[data-design=material] .brand { display:block; text-align:center; padding:3px 0 17px; font-size:30px; }
+:root[data-design=material] .brand span, :root[data-design=material] .caption,
+:root[data-design=material] .nav-group-label { display:none; }
+:root[data-design=material] .nav-group { margin:0 0 8px; }
+:root[data-design=material] .nav { flex-direction:column; gap:4px; align-items:center; justify-content:center; padding:6px 2px; min-height:61px; margin:2px 0; border-radius:22px; font-size:11px; line-height:1.3; text-align:center; white-space:normal; color:var(--muted); }
+:root[data-design=material] .nav svg { width:46px; height:27px; padding:3px 11px; box-sizing:content-box; border-radius:20px; stroke:var(--text); }
+:root[data-design=material] .nav.active { background:transparent; color:var(--text); box-shadow:none; font-weight:650; }
+:root[data-design=material] .nav.active svg { background:var(--active); stroke:var(--accent-text); }
+:root[data-design=material] .nav:hover { background:color-mix(in srgb,var(--surface) 40%,transparent); }
+:root[data-design=material] .sidebar-foot { text-align:center; padding:12px 2px 0; font-size:0; border:0; }
+:root[data-design=material] .sidebar-foot .dot { display:none; }
+:root[data-design=material] .sidebar-foot p { font-size:9px; }
+:root[data-design=material] main > header { background:var(--bg); padding:15px 4px 18px; border:0; border-radius:0; backdrop-filter:none; }
+:root[data-design=material] header h1 { font-size:34px; font-weight:500; letter-spacing:-.8px; margin:5px 0; }
+:root[data-design=material] header .eyebrow { letter-spacing:1px; font-size:10px; }
+:root[data-design=material] header .subtle { font-size:13px; }
+:root[data-design=material] .back-button { border-radius:50%; background:var(--soft); width:40px; height:40px; }
+:root[data-design=material] button:not(.nav):not(.text-button):not(.theme-choice):not(.design-choice) { min-height:40px; padding:9px 20px; font-weight:600; }
+:root[data-design=material] .secondary { background:transparent; border:1px solid var(--border); color:var(--accent-text); }
+:root[data-design=material] .card, :root[data-design=material] .result { padding:28px 30px; background:var(--surface); border:0; }
+:root[data-design=material] .card { background:color-mix(in srgb,var(--surface) 82%,var(--soft)); }
+:root[data-design=material] .searchbox { background:var(--soft); }
+:root[data-design=material] .search-row #query { border-radius:28px; background:var(--surface); border:0; padding:14px 22px; min-height:50px; }
+:root[data-design=material] .paper-heading h3 { font-size:23px; font-weight:500; letter-spacing:-.4px; }
+:root[data-design=material] .paper-number { display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:12px; padding:0; background:var(--active); color:var(--accent-text); font-weight:600; }
+:root[data-design=material] .relation-section { background:var(--soft); border-radius:22px; padding:18px 22px; }
+:root[data-design=material] .page-chip { border-radius:14px; min-height:34px; border:1px solid var(--border); background:transparent; }
+:root[data-design=material] .page-chip[aria-pressed=true] { background:var(--active); border-color:transparent; color:var(--accent-text); }
+:root[data-design=material] .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; padding:0; border:0; margin:20px 0; }
+:root[data-design=material] .stat { border:0; border-radius:22px; background:var(--soft); padding:20px; }
+:root[data-design=material] .stat:nth-child(even) { background:var(--active); }
+:root[data-design=material] .stat b { display:block; font-size:27px; font-weight:500; margin-bottom:5px; }
+:root[data-design=material] .stat span { font-size:12px; }
+:root[data-design=material] .search-explanation { background:var(--active); border-radius:18px; padding:14px 20px; }
+:root[data-design=material] .graph-detail, :root[data-design=material] .graph-canvas { border:0; }
+:root[data-design=material] .graph-detail { background:var(--soft); }
+:root[data-design=material] .graph-legend { padding:8px 14px; border-radius:15px; background:var(--soft); }
+
+/* The chooser previews structure as well as tone. A palette remains optional. */
+html[data-design] .design-heading { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
+html[data-design] .design-heading h2 { font-size:24px; margin-bottom:7px; letter-spacing:-.5px; }
+html[data-design] .design-heading p { max-width:720px; font-size:13px; line-height:1.9; margin:0; }
+.design-badge { flex:none; border-radius:20px; padding:6px 11px; background:var(--active); color:var(--accent-text); font-size:11px; }
+.design-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:24px 0; }
+html[data-design] .design-choice { display:block; padding:0; overflow:hidden; border:2px solid transparent; border-radius:16px; text-align:left; background:var(--soft); color:var(--text); min-width:0; box-shadow:none; }
+html[data-design] .design-choice[aria-checked=true] { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 10%,transparent); }
+html[data-design] .design-choice:hover { background:var(--active); }
+.design-specimen { position:relative; display:block; height:120px; margin:10px 10px 0; overflow:hidden; border:1px solid #cbd4e455; }
+.design-specimen .mini-nav { position:absolute; inset:0 auto 0 0; width:31%; }
+.design-specimen .mini-nav i { display:block; height:5px; margin:12px 7px; border-radius:3px; background:#9aa9bd70; }
+.design-specimen .mini-nav i:first-child { width:50%; height:7px; margin-bottom:18px; }
+.design-specimen .mini-sheet { position:absolute; left:36%; top:18px; right:10px; bottom:12px; padding:12px; }
+.design-specimen .mini-sheet b { display:block; width:55%; height:8px; background:#61728a55; margin-bottom:14px; border-radius:3px; }
+.design-specimen .mini-sheet i { display:block; height:5px; background:#9caabe55; margin:8px 0; border-radius:3px; }
+.design-specimen .mini-sheet em { display:block; height:18px; width:75%; margin-top:13px; }
+.specimen-apple { background:linear-gradient(140deg,#e4eaff,#f6f9fd); border-radius:10px; }
+.specimen-apple .mini-nav { inset:8px auto 8px 8px; border-radius:10px; background:#ffffffb8; box-shadow:0 2px 8px #5b6c8e12; }
+.specimen-apple .mini-nav i:nth-child(2) { background:#397be1; }
+.specimen-apple .mini-sheet { border-radius:10px; background:#fff; box-shadow:0 5px 12px #536e9510; }
+.specimen-apple .mini-sheet em { border-radius:9px; background:#e6edfa; }
+.specimen-fluent { background:#e9edf3; border-radius:5px; }
+.specimen-fluent .mini-nav { background:#e0e6ef; }
+.specimen-fluent .mini-nav i:nth-child(2) { border-left:3px solid #387cd0; border-radius:0; background:#f9fbff; height:10px; }
+.specimen-fluent .mini-sheet { top:8px; bottom:0; right:0; border:1px solid #cbd4e0; border-radius:6px 0 0; background:#fff; }
+.specimen-fluent .mini-sheet em { background:#f3f5f8; border:1px solid #d7dfe8; border-radius:3px; }
+.specimen-material { background:#eee7f7; border-radius:14px; }
+.specimen-material .mini-nav { width:20%; background:#e3d8f0; }
+.specimen-material .mini-nav i { width:15px; height:12px; margin:8px auto; border-radius:9px; }
+.specimen-material .mini-nav i:first-child { margin-bottom:8px; width:15px; height:12px; }
+.specimen-material .mini-nav i:nth-child(2) { background:#a78bc8; }
+.specimen-material .mini-sheet { left:25%; border-radius:16px; background:#fffbff; }
+.specimen-material .mini-sheet em { background:#e9dcf7; border-radius:12px; }
+.design-choice-copy { display:block; padding:14px 15px 17px; }
+.design-choice-copy strong { display:block; font-size:15px; line-height:1.6; margin-bottom:5px; }
+.design-choice-copy small { display:block; font-size:11px; line-height:1.8; font-weight:400; color:var(--muted); }
+.appearance-controls { gap:14px; }
+html[data-design] .appearance-controls label { margin:0 0 6px; font-size:12px; color:var(--muted); }
+html[data-design] .appearance-controls select { width:100%; }
+.palette-disclosure { border:0; padding:0; margin:20px 0; }
+.palette-disclosure > summary { cursor:pointer; font-size:13px; color:var(--muted); }
+html[data-design] .theme-choices { grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:15px 0; }
+html[data-design] .theme-choice { min-height:38px; padding:8px 10px; font-size:11px; border-radius:9px; }
+html[data-design] .theme-choice:before { margin-right:6px; }
+html[data-design] .appearance-actions { position:sticky; bottom:14px; z-index:10; display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--panel-radius); box-shadow:0 4px 18px #1825340a; margin-top:20px; }
+.appearance-actions #appearance-state { flex:1; margin:0; }
+html[data-design] #appearance-form .inline-label { margin:20px 0 4px; font-size:13px; }
+
+/* Density adjusts spacing without changing the selected design language. */
+:root[data-design][data-density=compact] .card,
+:root[data-design][data-density=compact] .result { padding:18px 22px; margin:12px 0; }
+:root[data-design][data-density=compact] .paper-section { margin-top:14px; }
+:root[data-design][data-density=compact] .nav { padding:7px 12px; min-height:34px; }
+:root[data-design=material][data-density=compact] .nav { padding:4px 2px; min-height:54px; }
+:root[data-design][data-density=compact] main>header { padding-top:10px; padding-bottom:10px; }
+:root[data-design][data-theme=contrast] .sidebar,
+:root[data-design][data-theme=contrast] main>header { background:var(--surface); backdrop-filter:none; border:1px solid var(--text); }
+:root[data-design][data-theme=contrast] .card,
+:root[data-design][data-theme=contrast] .result { border:1px solid var(--text); }
+
+@media(min-width:1550px) { html[data-design] main { padding-left:44px; padding-right:44px; } }
+@media(max-width:1120px) { :root { --content-pad:22px; } :root[data-design=apple] { --shell-width:210px; --content-pad:22px; } :root[data-design=fluent] { --shell-width:216px; --content-pad:22px; } .design-choices { gap:10px; } .design-specimen { height:100px; } }
+@media(max-width:950px) { .design-choices { grid-template-columns:1fr; gap:10px; } html[data-design] .design-choice { display:grid; grid-template-columns:170px 1fr; align-items:center; } .design-specimen { margin:8px; height:95px; } .design-choice-copy { padding:15px; } html[data-design] main { padding-left:20px; padding-right:20px; } html[data-design] .graph-shell { grid-template-columns:1fr; } html[data-design] .appearance-controls>div { min-width:130px; } :root[data-design=apple] .stats { display:grid; grid-template-columns:1fr 1fr; gap:14px; } :root[data-design=apple] .stat { border:0; padding:0 10px; } }
+@media(max-width:750px) {
+  html[data-design] body { min-width:500px; }
+  html[data-design] .sidebar { position:sticky; inset:auto; top:0; width:100%; height:auto; padding:8px 10px; border-radius:0; border-bottom:1px solid var(--border); }
+  html[data-design] .sidebar .brand,html[data-design] .caption,html[data-design] .sidebar-foot,html[data-design] .nav-group-label { display:none; }
+  html[data-design] .sidebar nav { display:flex; overflow-x:auto; padding:0; }
+  html[data-design] .nav-group { display:flex; margin:0; }
+  html[data-design] .nav { flex-direction:row; min-height:36px; min-width:max-content; padding:7px 11px; font-size:12px; gap:8px; border-radius:9px; margin:1px 2px; }
+  html[data-design] .nav svg { width:16px; height:16px; padding:0; box-sizing:border-box; border-radius:0; background:none!important; }
+  html[data-design] main { margin:0; border:0; border-radius:0; padding:15px; min-height:calc(100vh - 55px); }
+  html[data-design] main>header { position:relative; top:0; padding:14px; }
+  html[data-design] header h1 { font-size:23px; }
+  html[data-design] .card,html[data-design] .result { padding:20px; }
+  .design-heading { flex-direction:column; gap:10px!important; }
+  html[data-design] .design-choice { grid-template-columns:140px 1fr; }
+  .design-specimen { height:90px; }
+  html[data-design] .theme-choices { grid-template-columns:repeat(3,1fr); }
+  html[data-design] .appearance-actions { flex-wrap:wrap; bottom:8px; }
+  html[data-design] .appearance-actions #appearance-state { flex-basis:100%; }
+}
+@media(prefers-reduced-transparency:reduce) { html[data-design] .sidebar,html[data-design] main>header { backdrop-filter:none; background:var(--surface); } }
+@media(forced-colors:active) { html[data-design] .sidebar,html[data-design] .card,html[data-design] .result { background:Canvas; border:1px solid CanvasText; } html[data-design] .nav.active { background:Highlight; color:HighlightText; } }
+@media(prefers-reduced-motion:no-preference) {
+  :root:not([data-motion=none]) .sidebar,:root:not([data-motion=none]) main { transition:margin .22s ease,width .22s ease,border-radius .22s ease,background-color .2s ease; }
+}

@@ -5,11 +5,11 @@
   window.isGraphBusy=()=>busy||writing;window.isGraphDirty=()=>linkDirty;
   el('graph-link-form').addEventListener('input',()=>{linkDirty=true;});
   async function mutateLink(path,payload){writing=true;try{return await api(path,payload);}finally{writing=false;}}
-  function styles(){const s=getComputedStyle(document.documentElement),c=name=>s.getPropertyValue('--'+name).trim();return [
-    {selector:'node',style:{'shape':'ellipse','width':22,'height':22,'background-color':c('surface'),'border-width':2,'border-color':c('accent'),'label':'data(label)','font-size':12,'font-family':'Segoe UI, Microsoft YaHei, sans-serif','color':c('text'),'text-valign':'bottom','text-margin-y':9,'text-halign':'center','text-wrap':'wrap','text-max-width':96,'text-overflow-wrap':'anywhere','text-outline-color':c('soft'),'text-outline-width':2,'padding':3,'overlay-opacity':0}},
-    {selector:'node.center',style:{'background-color':c('accent'),'color':c('accent-text'),'width':32,'height':32,'border-color':c('accent'),'border-width':2,'font-weight':600}},
+  function styles(){const s=getComputedStyle(document.documentElement),c=name=>s.getPropertyValue('--'+name).trim(),n=(name,fallback)=>parseFloat(c(name))||fallback;return [
+    {selector:'node',style:{'shape':c('graph-node-shape')||'ellipse','width':n('graph-node-width',24),'height':n('graph-node-height',24),'background-color':c('surface'),'border-width':2,'border-color':c('accent'),'label':'data(label)','font-size':n('graph-label-size',12),'font-family':c('ui-font')||'Segoe UI, Microsoft YaHei, sans-serif','color':c('text'),'text-valign':'bottom','text-margin-y':9,'text-halign':'center','text-wrap':'wrap','text-max-width':96,'text-overflow-wrap':'anywhere','text-outline-color':c('soft'),'text-outline-width':2,'padding':3,'overlay-opacity':0}},
+    {selector:'node.center',style:{'background-color':c('accent'),'color':c('accent-text'),'width':n('graph-node-width',24)*1.4,'height':n('graph-node-height',24)*1.4,'border-color':c('accent'),'border-width':2,'font-weight':600}},
     {selector:'node.missing',style:{'border-style':'dashed','opacity':.6}},
-    {selector:'edge',style:{'width':1.2,'line-color':c('muted'),'opacity':.25,'curve-style':'bezier','line-style':'dashed','overlay-opacity':0}},
+    {selector:'edge',style:{'width':n('graph-edge-width',1.2),'line-color':c('muted'),'opacity':.25,'curve-style':'bezier','line-style':'dashed','overlay-opacity':0}},
     {selector:'edge[origin="manual"]',style:{'line-color':c('accent'),'opacity':.7,'width':2,'line-style':'solid'}},
     {selector:'edge[kind="cites"]',style:{'target-arrow-shape':'triangle','target-arrow-color':c('accent')}},
     {selector:'edge[origin="comparison"]',style:{'line-color':'#9774bd','line-style':'dotted','opacity':.55}},
@@ -22,7 +22,7 @@
   function fit(){if(cy){cy.resize();cy.fit(undefined,45);}}
   function layout(){
     if(!cy)return;cy.resize();cy.elements().removeClass('dimmed focused');
-    cy.layout(el('graph-layout').value==='concentric'?{name:'concentric',animate:false,padding:45,minNodeSpacing:38,avoidOverlap:true,nodeDimensionsIncludeLabels:true,concentric:n=>n.id()===seed?1000:n.degree(),levelWidth:()=>2}:
+    cy.layout(el('graph-layout').value==='concentric'?{name:'concentric',animate:false,padding:35,minNodeSpacing:20,avoidOverlap:true,nodeDimensionsIncludeLabels:true,concentric:n=>seed?(n.id()===seed?2:1):n.degree(),levelWidth:()=>seed?.5:2}:
       {name:'cose',animate:false,randomize:false,padding:45,nodeDimensionsIncludeLabels:true,nodeRepulsion:()=>2048,idealEdgeLength:()=>70,edgeElasticity:()=>32,nodeOverlap:20,componentSpacing:80,numIter:900,initialTemp:160,coolingFactor:.95,minTemp:1}).run();
     if(cy.zoom()<.8){cy.zoom(.8);cy.center(seed?cy.getElementById(seed):cy.elements());}
     if(selected){const node=data.nodes.find(n=>n.id===selected);if(node)detail(node);}
@@ -58,7 +58,7 @@
   el('graph-zoom-out').onclick=()=>cy?.zoom({level:Math.max(.18,cy.zoom()/1.2),renderedPosition:{x:cy.width()/2,y:cy.height()/2}});
   for(const id of ['graph-auto','graph-archived','graph-limit'])el(id).addEventListener('change',()=>load());
   new ResizeObserver(()=>{if(cy&&!el('graph-view').hidden)cy.resize();}).observe(el('literature-graph'));
-  new MutationObserver(()=>{if(cy)cy.style(styles());}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  new MutationObserver(()=>{if(cy){cy.style(styles());cy.resize();}}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','data-design','data-density']});
   document.addEventListener('workspaceview',event=>{if(event.detail==='graph-view'){if(!data)load();else requestAnimationFrame(()=>cy?.resize());}});
   el('literature-graph').onkeydown=event=>{if(!cy)return;if(event.key==='Escape'){cy.elements().removeClass('dimmed focused');cy.nodes().unselect();}if(event.key==='+'||event.key==='=')el('graph-zoom-in').click();if(event.key==='-')el('graph-zoom-out').click();};
   async function lookup(){try{const response=await fetch('/api/literature/catalog?query='+encodeURIComponent(el('graph-link-query').value),{headers:{'X-Sociolit-Token':token}});if(!response.ok)throw Error('查找文献失败');const values=await response.json();for(const key of ['graph-link-source','graph-link-target']){const previous=el(key).value, keep=Array.from(el(key).options).find(o=>o.value===previous);el(key).replaceChildren();const merged=new Map(values.map(v=>[v.id,v.title]));if(keep)merged.set(keep.value,keep.textContent);for(const [id,title] of merged){const option=document.createElement('option');option.value=id;option.textContent=title;el(key).append(option);}if(keep)el(key).value=previous;else if(key==='graph-link-target'&&values.length>1)el(key).selectedIndex=1;}el('graph-link-hint').textContent=`找到 ${values.length} 篇，最多显示30篇。选择两篇并说明关系；可继续查找另一题名，已选项会保留。`;}catch(error){notice(error.message,true);}}

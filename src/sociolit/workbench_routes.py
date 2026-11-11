@@ -6,6 +6,7 @@ from . import appearance, graph
 
 
 class Appearance(BaseModel):
+    design: str | None = Field(default=None, max_length=20)
     theme: str = Field(max_length=20)
     motion: str = Field(max_length=20)
     density: str = Field(max_length=20)
@@ -52,7 +53,7 @@ def attach_workbench(app, store, authorize, mutate):
     @app.post('/api/appearance')
     def appearance_save(body: Appearance, x_sociolit_token: str | None = Header(default=None)):
         authorize(x_sociolit_token)
-        return write(lambda: appearance.save(store.directory, body.model_dump()))
+        return write(lambda: appearance.save(store.directory, body.model_dump(exclude_none=True)))
 
     @app.get('/api/literature/catalog')
     def catalog(query: str = '', x_sociolit_token: str | None = Header(default=None)):
