@@ -8,12 +8,12 @@
 
 ## 下载与升级
 
-当前正式版 **0.10.0**，支持 **Windows 10 / 11 x64**。软件自带运行环境，直接安装即可使用。
+当前正式版 **0.11.0**，支持 **Windows 10 / 11 x64**。软件自带运行环境，直接安装即可使用。
 
 | 选择 | 下载 | 适合谁 |
 | --- | --- | --- |
-| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.10.0/SocioLibrary-0.10.0-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
-| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.10.0/SocioLibrary-0.10.0-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
+| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.11.0/SocioLibrary-0.11.0-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
+| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.11.0/SocioLibrary-0.11.0-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
 
 已有版本可以进入 **软件更新 → 检查更新 → 下载并升级**，也可以关闭软件后运行安装包覆盖升级。原资料库、模型、笔记和设置沿用，升级前先生成本机快照。[升级与恢复](docs/windows.md#资料升级与退出) · [版本说明与校验文件](https://github.com/Yoesher/SocioLibrary/releases/latest)
 
@@ -32,14 +32,22 @@
 
 ## 动态文献图谱
 
-**0.10.0：从一篇文献出发，沿着线索继续探索。**
+**0.11.0：轻量圆点、清晰标题，从一篇文献继续探索。**
 
 - 每次原位展开最多8篇关联，拖动固定节点，随时暂停动态。
 - 在动态网络、同心关系和年代脉络之间切换，用概览和图内定位找到目标。
 - 按关系来源筛选，查看每条依据；双击进入论文详情，再返回原图。
 - 返回/前进恢复本次会话的位置、视角、选中文献和固定状态。
 
-单视图最多80篇，可选择新中心继续探索；自动连线是需要核对的阅读线索。位置与历史仅保留在本次打开中。[图谱使用说明与来源](docs/v0.10-graph-explorer.md)
+小实心圆点、细连线与侧边标题；标题自动避让，可调整圆点大小和标题密度。
+
+单视图最多80篇，可选择新中心继续探索；自动连线是需要核对的阅读线索。位置与历史仅保留在本次打开中。[图谱与自选期刊说明](docs/v0.11-graph-and-journals.md)
+
+## 自选期刊
+
+在“期刊动态 → 添加期刊”填写官网 RSS / Atom，或使用 Crossref 的 ISSN 接入；可修改来源、暂停及恢复订阅。软件内附具体步骤，失败验证保留原订阅，暂停保留已入库文献。
+
+例如：`American Sociological Review` → `Crossref · ISSN` → `0003-1224` → 验证并保存 → 立即检查。OpenAlex 需先在本机配置密钥；本机订阅不会自动同步到 GitHub。[完整接入方法](docs/v0.11-graph-and-journals.md)
 
 ## 三套风格，一整个工作台
 
