@@ -12,7 +12,67 @@ permissions:
   contents: write
   actions: read
 jobs:
+  verify_archives:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN: ${{ inputs.source_run }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      BUILD_ARCH: ${{ matrix.arch }}
+    steps:
+      - name: Verify draft and source identity
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          test "$(gh run view "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --json conclusion --jq .conclusion)" = success
+          test "$(gh run view "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --json workflowName --jq .workflowName)" = 'Build macOS desktop previews'
+          test "$(gh run view "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --json headSha --jq .headSha)" = "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json targetCommitish --jq .targetCommitish)"
+      - name: Download delivered archive
+        run: gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name "SocioLibrary-macOS-$BUILD_ARCH" --dir artifacts
+      - name: Verify extracted application and native bridge
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, platform, re, subprocess
+          from pathlib import Path
+          arch = os.environ['BUILD_ARCH']
+          assert platform.machine() == arch
+          tag = os.environ['RELEASE_TAG']
+          assert re.fullmatch(r'v\d+\.\d+\.\d+', tag)
+          folder = Path('artifacts')
+          name = f'SocioLibrary-{tag[1:]}-macOS-{arch}.zip'
+          expected = folder / name
+          lines = (folder / f'SHA256SUMS-macOS-{arch}.txt').read_text().splitlines()
+          assert len(lines) == 1
+          digest, stored_name = lines[0].split('  ', 1)
+          assert stored_name == name and hashlib.sha256(expected.read_bytes()).hexdigest() == digest
+          root = Path(os.environ['RUNNER_TEMP'])
+          destination = root / 'delivered-application'
+          subprocess.run(['/usr/bin/ditto', '-x', '-k', str(expected), str(destination)], check=True)
+          app = destination / 'SocioLibrary.app'
+          subprocess.run(['/usr/bin/codesign', '--verify', '--deep', '--strict', str(app)], check=True)
+          exe = app / 'Contents/MacOS/SocioLibrary'
+          for flag, kind, result in [('--smoke-test','data','smoke-result.json'),('--gui-smoke-test','window','gui-smoke-result.json')]:
+              data = root / ('delivered-' + kind)
+              try:
+                  subprocess.run([str(exe), flag, '--data-dir', str(data)], timeout=180, check=True)
+                  value = json.loads((data / result).read_text())
+                  print(json.dumps(value))
+                  assert value['ok'] and tag[1:] in value['version']
+              except Exception:
+                  log = data / 'logs/desktop.log'
+                  if log.exists(): print(log.read_text()[-12000:])
+                  raise
+          PY
   stage:
+    needs: verify_archives
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
