@@ -1,6 +1,6 @@
 # Windows 桌面版
 
-面向 Windows 10 / 11 x64；本轮不发布 macOS、Linux、ARM 原生或 32 位安装包。
+本页面向 Windows 10 / 11 x64；Mac 用户请阅读 [macOS 预览版说明](macos.md)。暂不提供 Linux、Windows ARM 原生或 32 位安装包。
 
 0.5 新增“AI 文献阅读”：可配置自己的 OpenAI / ChatGPT API、多种兼容服务及本机模型，逐次预览选中片段并确认后再发送。密钥在 Windows 当前账号下加密，随原资料目录保留，升级快照包含加密配置。详见 [AI 配置和使用](ai.md)。
 

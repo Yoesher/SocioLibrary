@@ -2,20 +2,22 @@
   <img src="docs/assets/sociolibrary-cover.svg" alt="SocioLibrary · Apple、Windows 与 Material 三套风格示意" width="1200">
 </p>
 
-<p align="center"><strong>让文献，从收藏走向研究。</strong><br>Windows 本地文献工作台 · Zotero 导入 · 中英检索 · 阅读与比较</p>
+<p align="center"><strong>让文献，从收藏走向研究。</strong><br>本地文献工作台 · Windows 与 Mac · Zotero 导入 · 中英检索 · 阅读与比较</p>
 
 <p align="center"><a href="https://github.com/Yoesher/SocioLibrary/releases/latest"><strong>下载最新版</strong></a> · <a href="docs/windows.md">开始使用</a> · <a href="docs/README.md">使用文档</a> · <a href="https://github.com/Yoesher/SocioLibrary/issues">反馈问题</a></p>
 
 ## 下载与升级
 
-当前正式版 **0.11.0**，支持 **Windows 10 / 11 x64**。软件自带运行环境，直接安装即可使用。
+当前正式版 **0.12.0**，支持 **Windows 10 / 11 x64**，另提供 **macOS 15+ 预览版**。软件自带运行环境，直接安装即可使用。
 
 | 选择 | 下载 | 适合谁 |
 | --- | --- | --- |
-| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.11.0/SocioLibrary-0.11.0-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
-| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.11.0/SocioLibrary-0.11.0-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
+| 安装版 · 推荐 | [Windows 安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.0/SocioLibrary-0.12.0-Windows-x64-Setup.exe) | 首次使用；覆盖升级；软件内一键更新 |
+| 免安装版 | [Windows 免安装包](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.0/SocioLibrary-0.12.0-Windows-x64-Portable.zip) | 完整解压后运行，需要自行管理程序文件夹 |
 
-已有版本可以进入 **软件更新 → 检查更新 → 下载并升级**，也可以关闭软件后运行安装包覆盖升级。原资料库、模型、笔记和设置沿用，升级前先生成本机快照。[升级与恢复](docs/windows.md#资料升级与退出) · [版本说明与校验文件](https://github.com/Yoesher/SocioLibrary/releases/latest)
+Windows 已有版本可以进入 **软件更新 → 检查更新 → 下载并升级**，也可以关闭软件后运行安装包覆盖升级。原资料库、模型、笔记和设置沿用，升级前先生成本机快照。[升级与恢复](docs/windows.md#资料升级与退出) · [版本说明与校验文件](https://github.com/Yoesher/SocioLibrary/releases/latest)
+
+Mac 预览版：[Apple 芯片 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.0/SocioLibrary-0.12.0-macOS-arm64.zip) · [Intel ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.0/SocioLibrary-0.12.0-macOS-x86_64.zip)。尚未 Apple 公证；Intel 版暂不附带本地语义运行环境，Mac 扫描页 OCR 和自动替换应用尚未提供。[Mac 安装与范围](docs/macos.md)
 
 ## 用它做什么
 
@@ -32,7 +34,7 @@
 
 ## 动态文献图谱
 
-**0.11.0：轻量圆点、清晰标题，从一篇文献继续探索。**
+**从一篇文献继续探索，保存自己的研究网络。**
 
 - 每次原位展开最多8篇关联，拖动固定节点，随时暂停动态。
 - 在动态网络、同心关系和年代脉络之间切换，用概览和图内定位找到目标。
@@ -41,11 +43,11 @@
 
 小实心圆点、细连线与侧边标题；标题自动避让，可调整圆点大小和标题密度。
 
-单视图最多80篇，可选择新中心继续探索；自动连线是需要核对的阅读线索。位置与历史仅保留在本次打开中。[图谱与自选期刊说明](docs/v0.11-graph-and-journals.md)
+单视图最多80篇，可选择新中心继续探索；自动连线是需要核对的阅读线索。探索返回历史保留在本次打开中；命名保存的研究图谱可跨重开恢复，并导出 Obsidian 画布与文献笔记。[保存图谱与 Obsidian 导出](docs/v0.12-research-workspace.md)
 
 ## 自选期刊
 
-在“期刊动态 → 添加期刊”填写官网 RSS / Atom，或使用 Crossref 的 ISSN 接入；可修改来源、暂停及恢复订阅。软件内附具体步骤，失败验证保留原订阅，暂停保留已入库文献。
+在“期刊动态 → 添加期刊”填写官网 RSS / Atom，或使用 Crossref 的 ISSN 接入；可修改来源、暂停及恢复订阅。软件内附具体步骤，失败验证保留原订阅，暂停保留已入库文献。新增文献进入收件箱，可按刊名、未读与收藏筛读；发表日期和首次发现时间分别显示。
 
 例如：`American Sociological Review` → `Crossref · ISSN` → `0003-1224` → 验证并保存 → 立即检查。OpenAlex 需先在本机配置密钥；本机订阅不会自动同步到 GitHub。[完整接入方法](docs/v0.11-graph-and-journals.md)
 
@@ -93,6 +95,6 @@
 
 [使用文档](docs/README.md) · [开发与命令](docs/development.md) · [架构](docs/architecture.md) · [验证记录](docs/validation.md) · [版本记录](CHANGELOG.md)
 
-[贡献指南](CONTRIBUTING.md) · [开发计划](ROADMAP.md) · [安全与隐私](SECURITY.md) · [第三方依赖](THIRD_PARTY_NOTICES.md)
+[贡献指南](CONTRIBUTING.md) · [同类项目调研](docs/ecosystem-review-2026-11.md) · [开发计划](ROADMAP.md) · [安全与隐私](SECURITY.md) · [第三方依赖](THIRD_PARTY_NOTICES.md)
 
 采用 [MIT 许可](LICENSE)。欢迎提交可复现的问题与改进建议；问题报告请使用合成示例，并去除私人文献、密钥和个人路径。

@@ -1,6 +1,6 @@
 # 开发与功能细节
 
-面向开发者的安装、命令、索引与期刊配置说明。下方命令均从项目根目录运行。桌面使用者请先阅读 [Windows 使用说明](windows.md)。
+面向开发者的安装、命令、索引与期刊配置说明。下方命令均从项目根目录运行。桌面使用者请先阅读 [Windows 使用说明](windows.md) 或 [Mac 预览版说明](macos.md)。
 
 ## 获取项目
 
@@ -32,7 +32,11 @@ Copy-Item config/local.example.toml config.local.toml
 .\.venv\Scripts\python.exe -m sociolit serve --config config.local.toml --open-browser
 ```
 
-当前只维护 Windows 发布包。本地服务地址为 `http://127.0.0.1:8765`，仅监听本机。
+提供 Windows 正式包与 macOS 15+ 分架构预览包。本地服务地址为 `http://127.0.0.1:8765`，仅监听本机；原生桌面启动使用随机回环端口。
+
+## macOS 开发与构建
+
+在 Mac 中使用 Python 3.11 创建虚拟环境，安装 `.[desktop,dev]`；Apple 芯片可额外安装 `.[semantic]`。Intel 预览版不安装已停止维护的旧 PyTorch。运行 `python -m sociolit.desktop` 启动原生窗口，或执行 `python scripts/build_macos.py` 生成对应当前架构的完整应用 ZIP。请在独立资料目录中开发，避免向测试进程指定正式研究库；平台范围、钥匙串和分发限制见 [Mac 文档](macos.md)。
 
 ## 本版已经实现
 
@@ -135,7 +139,7 @@ python -m pytest -q
 python -m ruff check src tests
 ```
 
-测试使用合成 PDF 和模拟来源，不访问个人文献、不要求密钥、不依赖外部网络。覆盖安全导入、PDF 变化、原文页码、跨库隔离、笔记标记、语义索引失效、分页去重、恶意 XML、来源失败与调度水位。实际运行环境及结果见[验证记录](validation.md)。CI 当前只维护 Windows、Python 3.11/3.13，构建情况见 GitHub Actions。
+测试使用合成 PDF 和模拟来源，不访问个人文献、不要求密钥、不依赖外部网络。覆盖安全导入、PDF 变化、原文页码、跨库隔离、笔记标记、语义索引失效、分页去重、恶意 XML、来源失败与调度水位。Windows 源码 CI 使用 Python 3.11/3.13；Mac 构建分别运行 Apple 芯片与 Intel 检查、独立程序及原生窗口验证。实际结果见 GitHub Actions 和[验证记录](validation.md)。
 
 项目采用 MIT 开源许可。参与开发时只提交经审查的代码、文档、公开配置和合成测试。`.gitignore` 屏蔽常见 PDF、数据库、模型和密钥文件，但不能保证识别任意命名的私人资料。先检查待提交文件，再创建远端仓库。代码采用 MIT 许可，论文与第三方模型的许可独立适用。详见 [SECURITY.md](../SECURITY.md) 和[架构说明](architecture.md)。
 
