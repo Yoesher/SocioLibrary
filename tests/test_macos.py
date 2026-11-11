@@ -56,3 +56,23 @@ def test_mac_update_selects_matching_arch_and_refuses_windows_fallback():
         parse_release(payload, '0.12.0', asset_name=lambda v: asset_name(v, 'x86_64'))
     with pytest.raises(UpdateError):
         asset_name('9.0.0', 'unknown')
+
+
+def test_cocoa_bridge_policy_is_limited_to_native_mac_shell(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from sociolit.server import create_app
+    from sociolit.store import Store
+    store = Store(tmp_path)
+    config = {'zotero': {}, 'journals': []}
+    monkeypatch.setattr('sociolit.server.sys.platform', 'darwin')
+    with TestClient(create_app(store, config), base_url='http://127.0.0.1') as client:
+        assert 'unsafe-eval' not in client.get('/').headers['content-security-policy']
+    with TestClient(create_app(store, config, native_cocoa=True), base_url='http://127.0.0.1') as client:
+        policy = client.get('/').headers['content-security-policy']
+        assert "script-src 'self' 'unsafe-eval'" in policy and 'unsafe-inline' not in policy
+        assert 'unsafe-eval' not in client.get('/api/status').headers['content-security-policy']
+        assert client.post('/api/journals/inbox/mark', json={'item_id': 'example', 'read': True}).status_code == 403
+    monkeypatch.setattr('sociolit.server.sys.platform', 'win32')
+    with TestClient(create_app(store, config, native_cocoa=True), base_url='http://127.0.0.1') as client:
+        assert 'unsafe-eval' not in client.get('/').headers['content-security-policy']

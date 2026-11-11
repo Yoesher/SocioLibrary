@@ -100,7 +100,7 @@ def chunk_digest(row):
     return sha256(json.dumps(values, ensure_ascii=False).encode()).hexdigest()
 
 
-def create_app(store, config, *, updater=None, ai_workspace=None):
+def create_app(store, config, *, updater=None, ai_workspace=None, native_cocoa=False):
     research.initialize(store)
     initialize_ocr(store)
     apply_feeds(store, config)
@@ -139,7 +139,10 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        # pywebview 6's Cocoa bridge generates its methods and resolves promises with eval.
+        # Restrict that compatibility exception to the native Mac shell's main document.
+        script_policy = "'self' 'unsafe-eval'" if native_cocoa and sys.platform == 'darwin' and request.url.path == '/' else "'self'"
+        response.headers["Content-Security-Policy"] = f"default-src 'self'; script-src {script_policy}; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         return response
 
     def authorize(value):
