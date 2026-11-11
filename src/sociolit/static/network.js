@@ -6,30 +6,31 @@
   let applied={limit:'15',auto:true,archived:false};
   let pinned=new Set(),dragging=new Set(),dragged=new Set(),past=[],future=[],mapTransform=null,lastTap={id:'',time:0};
   const reduced=matchMedia('(prefers-reduced-motion: reduce)'),isMoving=()=>!reduced.matches&&document.documentElement.dataset.motion!=='none';
-  const colors=()=>{const s=getComputedStyle(document.documentElement);return [s.getPropertyValue('--accent').trim(),...Array.from({length:5},(_,i)=>s.getPropertyValue('--graph-group-'+(i+1)).trim())];};
+  const colors=()=>{const s=getComputedStyle(document.documentElement);return [s.getPropertyValue('--graph-dot').trim(),...Array.from({length:5},(_,i)=>s.getPropertyValue('--graph-group-'+(i+1)).trim())];};
   const names={all:'全部',manual:'本人确认',words:'标签与词语',semantic:'语义线索',comparison:'比较表'};
   const sourceName={manual:'本人建立',metadata:'书目共同词语',tags:'共享标签',title:'题名词语',semantic:'本机语义',comparison:'比较表'};
   window.isGraphBusy=()=>busy||writing;window.isGraphDirty=()=>linkDirty;
   el('graph-link-form').addEventListener('input',()=>{linkDirty=true;});
   async function mutateLink(path,payload){writing=true;try{return await api(path,payload);}finally{writing=false;}}
-  function styles(){const s=getComputedStyle(document.documentElement),c=k=>s.getPropertyValue('--'+k).trim(),n=(k,f)=>parseFloat(c(k))||f;return [
-    {selector:'node',style:{shape:c('graph-node-shape')||'ellipse',width:e=>e.data('size')*Math.max(1,n('graph-node-width',24)/n('graph-node-height',24)),height:'data(size)', 'background-color':'data(color)','background-opacity':.16,'border-width':2,'border-color':'data(color)',label:'data(label)','font-size':Math.max(14,n('graph-label-size',12)),'font-family':'Segoe UI, Microsoft YaHei, sans-serif',color:c('text'),'text-valign':'bottom','text-margin-y':8,'text-wrap':'wrap','text-max-width':110,'text-overflow-wrap':'anywhere','text-outline-color':c('soft'),'text-outline-width':2,'min-zoomed-font-size':7,'overlay-opacity':0,'transition-property':'opacity, border-width, background-opacity','transition-duration':isMoving()?160:0}},
-    {selector:'node.center',style:{'background-opacity':.65,'border-width':3}},
-    {selector:'node.missing',style:{'border-style':'dashed',opacity:.65}},
-    {selector:'node.pinned',style:{'border-style':'double','border-width':5}},
-    {selector:'node.fresh',style:{'background-opacity':.7}},
-    {selector:'edge',style:{width:n('graph-edge-width',1.2),'line-color':c('muted'),opacity:.32,'curve-style':'bezier','line-style':'dashed','overlay-opacity':0}},
-    {selector:'edge[origin="manual"]',style:{'line-color':c('accent'),opacity:.8,width:2,'line-style':'solid'}},
+  function styles(){const s=getComputedStyle(document.documentElement),c=k=>s.getPropertyValue('--'+k).trim();return [
+    {selector:'node',style:{shape:'ellipse',width:'data(renderSize)',height:'data(renderSize)','background-color':'data(color)','background-opacity':1,'border-width':.8,'border-color':c('graph-canvas'),label:'data(label)','font-size':'data(fontSize)','font-family':'Segoe UI, Microsoft YaHei, sans-serif','font-weight':400,color:c('muted'),'text-opacity':.9,'text-valign':'center','text-halign':'right','text-margin-x':'data(labelGap)','text-wrap':'ellipsis','text-max-width':'data(labelWidth)','text-overflow-wrap':'anywhere','text-outline-color':c('graph-canvas'),'text-outline-width':2,'min-zoomed-font-size':0,'overlay-opacity':0,'overlay-padding':7,'ghost':'no','transition-property':'opacity, background-color, line-color','transition-duration':isMoving()?140:0}},
+    {selector:'node.center',style:{'background-color':c('accent'),'border-width':1.2}},
+    {selector:'node.missing',style:{'background-opacity':.2,'border-color':'data(color)','border-style':'dashed',opacity:.7}},
+    {selector:'node.pinned',style:{'underlay-color':'data(color)','underlay-opacity':.13,'underlay-padding':4,'underlay-shape':'ellipse'}},
+    {selector:'node.fresh',style:{'underlay-color':c('accent'),'underlay-opacity':.16,'underlay-padding':5,'underlay-shape':'ellipse'}},
+    {selector:'edge',style:{width:.8,'line-color':c('graph-line'),opacity:.5,'curve-style':'bezier','line-style':'solid','overlay-opacity':0}},
+    {selector:'edge[origin="manual"]',style:{'line-color':c('accent'),opacity:.65,width:1.2,'line-style':'solid'}},
     {selector:'edge[kind="cites"]',style:{'target-arrow-shape':'triangle','target-arrow-color':c('accent')}},
-    {selector:'edge[origin="comparison"]',style:{'line-color':c('graph-group-2'),'line-style':'dotted',opacity:.6}},
-    {selector:'edge[origin="semantic"]',style:{'line-color':c('graph-group-1'),opacity:.55}},
-    {selector:'.dimmed',style:{opacity:.1}},
-    {selector:'node.focused, node.hovered',style:{'background-opacity':.7,'border-width':3,'font-weight':600,'min-zoomed-font-size':0}},
-    {selector:'edge.focused, edge.hovered',style:{opacity:.95,width:2.3}},
-    {selector:'node:selected',style:{'background-opacity':.9,'border-width':4}},
+    {selector:'edge[origin="comparison"]',style:{'line-color':c('graph-group-2'),'line-style':'dotted',opacity:.55}},
+    {selector:'edge[origin="semantic"]',style:{'line-color':c('graph-group-1'),opacity:.5}},
+    {selector:'node.dimmed',style:{opacity:.28}},
+    {selector:'edge.dimmed',style:{opacity:.08}},
+    {selector:'node.focused, node.hovered',style:{color:c('text'),'text-opacity':1}},
+    {selector:'edge.focused, edge.hovered',style:{'line-color':c('accent'),opacity:.65,width:1.1}},
+    {selector:'node:selected',style:{'background-color':c('accent'),'border-width':1.2,'underlay-color':c('accent'),'underlay-opacity':.12,'underlay-padding':6,'underlay-shape':'ellipse',color:c('text'),'font-weight':600,'text-opacity':1,'min-zoomed-font-size':0}},
     {selector:'.filtered',style:{display:'none'}},
-    {selector:'node.labels-off',style:{label:''}},
-    {selector:'node.labels-off:selected,node.labels-off.hovered',style:{label:'data(label)'}}
+    {selector:'node.labels-off, node.labels-hidden',style:{label:''}},
+    {selector:'node.labels-off:selected,node.labels-off.hovered,node.labels-hidden:selected,node.labels-hidden.hovered',style:{label:'data(label)','min-zoomed-font-size':0}}
   ];}
   function activity(text,running=false){el('graph-activity').textContent=text;el('graph-activity').dataset.running=String(running);}
   function stopSimulation(text='布局已稳定'){if(simulation)cancelAnimationFrame(simulation);simulation=0;activity(text);}
@@ -127,7 +128,7 @@
     if(replace)cy.elements().remove();cy.nodes().removeClass('fresh');if(freshTimer)clearTimeout(freshTimer);const wanted=new Set(data.nodes.map(n=>n.id)),edgeIds=new Set(data.edges.map(e=>'graph-edge:'+encodeURIComponent(C.edgeKey(e))));
     cy.batch(()=>{
       cy.nodes().filter(n=>!wanted.has(n.id())).remove();cy.edges().filter(e=>!edgeIds.has(e.id())).remove();
-      data.nodes.forEach((node,i)=>{const label=(el('graph-layout').value==='timeline'?C.timelineLabel(node)+' · ':'')+(node.title.length>25?node.title.slice(0,24)+'…':node.title),values={...node,label,color:nodeColors.get(node.id),size:28+Math.min(18,(degree.get(node.id)?.size||0)*2)};
+      data.nodes.forEach((node,i)=>{const label=(el('graph-layout').value==='timeline'?C.timelineLabel(node)+' · ':'')+(node.title.length>25?node.title.slice(0,24)+'…':node.title),values={...node,label,color:nodeColors.get(node.id),degree:degree.get(node.id)?.size||0,size:10+Math.min(12,Math.sqrt(degree.get(node.id)?.size||0)*2.3),renderSize:16,fontSize:12,labelWidth:144,labelGap:7};
         let element=cy.getElementById(node.id);if(!element.length){const center=oldPositions.get(anchor)||{x:0,y:0},a=i*2.399;cy.add({group:'nodes',data:values,position:oldPositions.get(node.id)||{x:center.x+Math.cos(a)*130,y:center.y+Math.sin(a)*130}});element=cy.getElementById(node.id);if(anchor)element.addClass('fresh');}else element.data(values);
         element.toggleClass('center',node.id===seed).toggleClass('missing',!node.current).toggleClass('pinned',pinned.has(node.id));
       });
@@ -153,7 +154,13 @@
   }
   function syncListSelection(){el('graph-paper-list').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===selected)));}
   function renderList(){const box=el('graph-paper-list');box.replaceChildren();for(const node of visibleData().nodes){const b=make('button',node.title,'graph-list-item');b.dataset.id=node.id;b.setAttribute('aria-pressed',String(node.id===selected));b.onclick=()=>{detail(node);camera(node.id);el('literature-graph').scrollIntoView({block:'nearest',behavior:isMoving()?'smooth':'instant'});};box.append(b);}}
-  function scheduleMap(){if(minimapTimer)return;minimapTimer=setTimeout(()=>{minimapTimer=0;drawMap();},100);}
+  function readableLabels(){
+    if(!cy||!data)return;const adaptive=el('graph-label-mode').value==='adaptive',z=cy.zoom(),scale=Math.max(.35,Math.min(1,z));
+    cy.batch(()=>cy.nodes().forEach(n=>n.data({renderSize:n.data('size')*Number(el('graph-node-scale').value)/100/scale,fontSize:12/scale,labelWidth:144/scale,labelGap:7/scale})));
+    const nodes=cy.nodes().not('.filtered').map(n=>{const p=n.renderedPosition(),text=n.data('label'),units=Array.from(text).reduce((sum,ch)=>sum+(ch.charCodeAt(0)>255?1:.55),0),radius=n.data('renderSize')*z/2;return {id:n.id(),x:p.x+radius+7*z/scale,y:p.y-8*z/scale,width:Math.min(144,units*12)*z/scale,height:16*z/scale,priority:n.id()===selected?1e6:n.data('degree')||0,dot:{x:p.x,y:p.y,r:radius+3}};});
+    const ids=new Set(adaptive?C.labelIds(nodes,z):nodes.map(n=>n.id));cy.nodes().forEach(n=>n.toggleClass('labels-hidden',!ids.has(n.id())));
+  }
+  function scheduleMap(){if(minimapTimer)return;minimapTimer=setTimeout(()=>{minimapTimer=0;readableLabels();drawMap();},100);}
   function drawMap(){
     if(!cy||!data||!el('graph-minimap-visible').checked)return;const nodes=cy.nodes().not('.filtered'),svg=el('graph-minimap').querySelector('svg');svg.replaceChildren();if(!nodes.length)return;
     const box=nodes.boundingBox({includeLabels:false}),scale=Math.min(160/Math.max(1,box.w+70),86/Math.max(1,box.h+70)),offset={x:10+(160-(box.w+70)*scale)/2,y:6+(86-(box.h+70)*scale)/2};mapTransform={scale,x:box.x1-35,y:box.y1-35,offset};
@@ -174,6 +181,8 @@
   for(const id of ['graph-auto','graph-archived','graph-limit'])el(id).addEventListener('change',()=>load());
   for(const id of ['graph-orphans','graph-labels','graph-minimap-visible'])el(id).addEventListener('change',()=>{if(data){filters();simulate();}});
   el('graph-spacing').oninput=()=>simulate();
+  el('graph-node-scale').oninput=()=>{if(cy){cy.style(styles());scheduleMap();}};
+  el('graph-label-mode').onchange=()=>scheduleMap();
   el('graph-find').oninput=()=>{const q=el('graph-find').value.trim().toLocaleLowerCase(),box=el('graph-find-results');box.replaceChildren();box.hidden=!q;if(!q||!data)return;const found=visibleData().nodes.filter(n=>[n.title,...(n.authors||[]),...(n.tags||[])].join(' ').toLocaleLowerCase().includes(q));for(const n of found.slice(0,12)){const b=make('button',n.title);b.onclick=()=>{detail(n);camera(n.id);box.hidden=true;};box.append(b);}if(!found.length)box.append(make('p','当前可见图中没有匹配文献。'));};
   function immersive(value,remember=true){if(remember)immersivePreferred=value;document.body.classList.toggle('graph-immersive',value);el('graph-immersive').setAttribute('aria-pressed',String(value));el('graph-immersive').textContent=value?'退出沉浸':'沉浸探索';requestAnimationFrame(()=>cy?.resize());}
   el('graph-immersive').onclick=()=>immersive(!document.body.classList.contains('graph-immersive'));

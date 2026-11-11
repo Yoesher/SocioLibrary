@@ -140,7 +140,7 @@
   async function installReady() {
     if (installing || !updateContext || !updateContext.supported) return;
     if (exporting || noteDirty || preferencesDirty() || searchBusy || (window.isAIBusy && window.isAIBusy()) || (window.isLiteratureBusy && window.isLiteratureBusy()) ||
-        (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty()) || libraryStatus.library_busy ||
+        (window.isJournalBusy && window.isJournalBusy()) || (window.isJournalDirty && window.isJournalDirty()) || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty()) || libraryStatus.library_busy ||
         libraryStatus.job.state === 'running') {
       el('software-progress-text').textContent = '更新包已就绪，等待保存笔记和设置、结束当前任务；也可选择稍后安装。';
       return;
@@ -155,7 +155,7 @@
   }
   async function beginUpgrade() {
     showView('software-view');
-    if (noteDirty || preferencesDirty() || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty())) { notice('请先保存笔记、对照表、资料与 AI 设置，并处理对照篮或草稿，再开始升级。', true); return; }
+    if (noteDirty || preferencesDirty() || (window.isJournalBusy && window.isJournalBusy()) || (window.isJournalDirty && window.isJournalDirty()) || (window.isGraphBusy && window.isGraphBusy()) || (window.isGraphDirty && window.isGraphDirty()) || (window.isAppearanceDirty && window.isAppearanceDirty()) || (window.isAISettingsDirty && window.isAISettingsDirty()) || (window.isLiteratureDirty && window.isLiteratureDirty())) { notice('请先保存笔记、对照表、资料与 AI 设置，并处理对照篮或草稿，再开始升级。', true); return; }
     if (!updateState || !updateState.available_version) return;
     installIntent = Boolean(updateContext && updateContext.supported);
     if (updateState.state === 'ready') { await installReady(); return; }

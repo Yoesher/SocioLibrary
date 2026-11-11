@@ -29,6 +29,7 @@ def seed_upgrade_fixture(directory):
         db.execute("INSERT INTO ocr_pages VALUES(?,?,?,?)", ("synthetic:file", 1, "en-US", "synthetic upgrade evidence"))
     store.set_state("semantic_scope", {"label": "生育演示", "generation": 0, "item_ids": ["synthetic:item"]})
     store.set_state("journal-feed:人口学刊", {"url": "https://example.org/synthetic-feed", "enabled": False})
+    store.set_state("journal-subscriptions", {"Synthetic Custom Journal": {"name": "Synthetic Custom Journal", "enabled": False, "sources": ["crossref"], "issns": ["0003-1224"], "source_title": "Synthetic Custom Journal"}})
     research.save_search(store, "Synthetic saved search", {"query": "upgrade", "mode": "fulltext", "author": "", "year": ""})
     research.save_note(store, "Synthetic reading note", "Synthetic note survives upgrade", {"text": "synthetic excerpt", "page": 1})
     preferences = {"pdf_roots": [str(directory.resolve())], "collection_keywords": ["生育演示"],
@@ -85,6 +86,7 @@ def check_upgrade_fixture(directory, store):
     assert research.list_records(store, "notes")[0]["body"] == "Synthetic note survives upgrade"
     assert research.list_records(store, "searches")[0]["name"] == "Synthetic saved search"
     assert store.state("journal-feed:人口学刊")["enabled"] is False
+    assert store.state("journal-subscriptions")["Synthetic Custom Journal"]["enabled"] is False
     with store.connect() as db:
         assert db.execute("SELECT text FROM ocr_pages").fetchone()[0] == "synthetic upgrade evidence"
     assert (directory / "models/e5-small/synthetic-model.txt").read_text(encoding="utf-8").startswith("Synthetic model")
@@ -117,4 +119,4 @@ def check_upgrade_fixture(directory, store):
     assert len(network["edges"]) == 1 and any(not node["current"] for node in network["nodes"])
     return {"data_inherited": True, "snapshot_verified": True, "from_version": "0.3.0",
             "comparison_inherited": True, "annotation_snapshot_inherited": True,
-            "graph_inherited": True, "appearance_inherited": True, "catalog_index_inherited": True}
+            "graph_inherited": True, "appearance_inherited": True, "catalog_index_inherited": True, "journal_settings_inherited": True}

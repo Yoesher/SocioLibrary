@@ -80,5 +80,16 @@
     });return energy/Math.max(1,points.length);
   }
   function timelineLabel(node){return String(node.year||'').match(/\d{4}/)?.[0]||'未注明';}
-  return {MAX_NODES,MAX_EDGES,clone,edgeKey,merge,visible,groups,positions,step,timelineLabel};
+  // Screen-space labels: prioritise the selected paper, then hubs; zooming in reveals more.
+  function labelIds(nodes,zoom=1){
+    const boxes=[],ids=[];
+    for(const n of nodes.slice().sort((a,b)=>b.priority-a.priority||a.id.localeCompare(b.id))){
+      if(zoom<.32&&n.priority<1e6)continue;
+      const box={x:n.x-5,y:n.y-3,right:n.x+n.width+5,bottom:n.y+n.height+3};
+      if(n.priority<1e6&&(boxes.some(b=>box.x<b.right&&box.right>b.x&&box.y<b.bottom&&box.bottom>b.y)||nodes.some(other=>other.id!==n.id&&other.dot&&box.x<other.dot.x+other.dot.r&&box.right>other.dot.x-other.dot.r&&box.y<other.dot.y+other.dot.r&&box.bottom>other.dot.y-other.dot.r)))continue;
+      boxes.push(box);ids.push(n.id);
+    }
+    return ids;
+  }
+  return {MAX_NODES,MAX_EDGES,clone,edgeKey,merge,visible,groups,positions,step,timelineLabel,labelIds};
 });

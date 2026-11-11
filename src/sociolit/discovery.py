@@ -187,7 +187,8 @@ def _crossref(client: httpx.Client, subscription: dict, since: date, until: date
         cursor, seen = "*", set()
         for _page in range(max_pages):
             params = {"filter": f"from-index-date:{since},until-index-date:{until}",
-                      "rows": 100, "cursor": cursor}
+                      "rows": 1000, "cursor": cursor,
+                      "select": "DOI,title,author,published,issued,container-title,URL,ISSN"}
             email = os.environ.get("CROSSREF_MAILTO")
             if email:
                 params["mailto"] = email
@@ -205,7 +206,7 @@ def _crossref(client: httpx.Client, subscription: dict, since: date, until: date
                     "url": item.get("URL", ""), "sources": ["crossref"],
                     "source_ids": [item.get("DOI", "")], "issns": item.get("ISSN", [issn])})
             next_cursor = message.get("next-cursor")
-            if not items or not next_cursor or len(items) < 100:
+            if not items or not next_cursor or len(items) < 1000:
                 break
             if next_cursor == cursor or next_cursor in seen:
                 raise DiscoveryError("Crossref repeated a pagination cursor; run incomplete")

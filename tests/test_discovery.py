@@ -50,13 +50,14 @@ def test_crossref_cursor_and_index_dates():
     def handler(request):
         calls.append(request)
         assert request.url.params["filter"] == "from-index-date:2026-09-01,until-index-date:2026-11-06"
-        assert request.url.params["rows"] == "100"
+        assert request.url.params["rows"] == "1000"
+        assert "author" in request.url.params["select"] and "abstract" not in request.url.params["select"]
         if len(calls) == 1:
-            return httpx.Response(200, json={"message": {"items": [{"DOI": f"10.1234/{i}", "title": [f"Title {i}"]} for i in range(100)], "next-cursor": "page2"}})
+            return httpx.Response(200, json={"message": {"items": [{"DOI": f"10.1234/{i}", "title": [f"Title {i}"]} for i in range(1000)], "next-cursor": "page2"}})
         assert request.url.params["cursor"] == "page2"
         return httpx.Response(200, json={"message": {"items": [{"DOI": "10.1234/end", "title": ["Final title"], "author": [{"given": "A", "family": "Person"}], "issued": {"date-parts": [[2026, 10]]}}]}})
     result = run(handler)
-    assert result.complete and len(result.records) == 101
+    assert result.complete and len(result.records) == 1001
     assert next(r for r in result.records if r["doi"] == "10.1234/end")["published_date"] == "2026-10"
 
 
@@ -67,7 +68,7 @@ def test_compressed_api_response_is_decoded_only_once():
 
 
 def test_page_limit_is_a_visible_failure():
-    result = run(lambda r: httpx.Response(200, json={"message": {"items": [{"title": [str(i)], "DOI": f"10.1234/{i}"} for i in range(100)], "next-cursor": "more"}}), max_pages=1)
+    result = run(lambda r: httpx.Response(200, json={"message": {"items": [{"title": [str(i)], "DOI": f"10.1234/{i}"} for i in range(1000)], "next-cursor": "more"}}), max_pages=1)
     assert not result.complete
     assert "page limit" in result.errors[0]
 

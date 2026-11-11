@@ -10,6 +10,8 @@ from .zotero import Snapshot
 
 
 def discover_due(store, config, *, force=False, output_dir=None, today=None, runner=run_discovery):
+    from .subscriptions import apply_feeds
+    apply_feeds(store, config)
     today = today or date.today()
     settings = config.get("discovery", {})
     lookback = int(settings.get("lookback_days", 90))

@@ -290,3 +290,30 @@ html[data-design] #appearance-form .inline-label { margin:20px 0 4px; font-size:
 @media(prefers-reduced-motion:no-preference) {
   :root:not([data-motion=none]) .sidebar,:root:not([data-motion=none]) main { transition:margin .22s ease,width .22s ease,border-radius .22s ease,background-color .2s ease; }
 }
+
+/* Fixed-size header navigation: theme padding must not enlarge the icon button. */
+html[data-design] main > header > #workspace-back {
+  box-sizing:border-box; display:grid; place-items:center; flex:0 0 32px;
+  width:32px; height:32px; min-width:32px; min-height:32px; padding:0;
+  border:0; border-radius:8px; background:transparent; color:var(--accent-text);
+  align-self:center; box-shadow:none; line-height:1;
+}
+html[data-design] #workspace-back svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+html[data-design] #workspace-back:hover:not(:disabled) { background:var(--active); }
+html[data-design] #workspace-back:disabled { opacity:.35; background:transparent; }
+html[data-design] main > header > div { min-width:0; }
+#journals { display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr)); gap:12px; margin:20px 0; }
+html[data-design] #journals .journal-card { display:flex; flex-direction:column; align-items:stretch; gap:9px; padding:16px; border:1px solid var(--border); border-radius:var(--control-radius); background:var(--soft); }
+.journal-card h3 { font-size:14px; margin:0; }
+.journal-card p { margin:0; font-size:11px; color:var(--muted); line-height:1.7; }
+.journal-card .toolbar { margin-top:auto; gap:8px; }
+html[data-design] .journal-card button { font-size:11px; padding:5px 10px; min-height:30px; }
+.journal-card .journal-enabled { color:var(--accent-text); }
+.journal-editor { padding:20px; background:var(--soft); border:1px solid var(--border); border-radius:var(--panel-radius); margin:20px 0; }
+.journal-fields { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.journal-fields label { display:block; font-size:12px; margin:0 0 7px; }
+.journal-fields input,.journal-fields select { width:100%; box-sizing:border-box; }
+.journal-fields .journal-wide { grid-column:1/-1; }
+.journal-steps { font-size:13px; line-height:1.9; }
+#journal-message { white-space:pre-wrap; }
+@media(max-width:850px) { .journal-fields { grid-template-columns:1fr; } }

@@ -27,7 +27,7 @@ from .scope import active_scope
 from .semantic import LocalEmbedder, search_vectors
 from .service import build_configured_embeddings, sync_zotero
 from .software_updates import UpdateError, UpdateManager
-from .subscriptions import apply_feeds, configure_feed
+from .subscriptions import apply_feeds, configure_feed, configure_journal, subscription_views, toggle_journal
 from .upgrades import upgrade_status
 from .workbench_routes import attach_workbench
 
@@ -61,6 +61,19 @@ class FeedSettings(BaseModel):
     name: str = Field(max_length=100)
     url: str = Field(max_length=2000)
     enabled: bool = True
+
+
+class JournalSettings(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    provider: str = Field(max_length=20)
+    url: str = Field(default="", max_length=2000)
+    issns: list[str] = Field(default_factory=list, max_length=2)
+    feed_title: str = Field(default="", max_length=200)
+
+
+class JournalToggle(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    enabled: bool
 
 
 class OCRSettings(BaseModel):
@@ -150,9 +163,9 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
     @app.exception_handler(RequestValidationError)
     async def validation_error(request, exc):
         # Pydantic errors normally echo invalid inputs, which may contain an API key.
-        if request.url.path.startswith("/api/ai/"):
+        if request.url.path.startswith(("/api/ai/", "/api/journals", "/api/subscriptions")):
             from fastapi.responses import JSONResponse
-            return JSONResponse({"detail": "AI 设置或请求格式无效，请检查必填项和长度。"}, status_code=422)
+            return JSONResponse({"detail": "设置或请求格式无效，请检查必填项和长度。"}, status_code=422)
         return await request_validation_exception_handler(request, exc)
 
     attach_ai(app, store, authorize, mutate, workspace=ai_workspace)
@@ -225,7 +238,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
                     JOIN scope_items s ON s.id=c.item_id WHERE v.model=?""", (model_key,)).fetchone()[0]
                 scope_progress = {"done": done, "total": total}
         journals = []
-        for journal in config.get("journals", []):
+        for journal in subscription_views(config):
             homepage = journal.get("homepage", "")
             try:
                 parsed = urlparse(homepage)
@@ -233,7 +246,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
                     homepage = ""
             except ValueError:
                 homepage = ""
-            journals.append({"name": journal.get("name"), "enabled": journal.get("enabled", False), "homepage": homepage, "status": journal.get("status", "")})
+            journals.append(dict(journal, homepage=homepage))
         return {"stats": store.stats(), "token": token, "last_import": last_import,
                 "import_incomplete": store.state("import_incomplete", False),
                 "discovery": store.state("last_discovery"), "file_notices": problems, "file_notice_count": problem_count,
@@ -355,6 +368,7 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
                 raise ValueError("该期刊尚未配置自定义 RSS。")
             saved["enabled"] = False
             store.set_state("journal-feed:" + name, saved)
+            toggle_journal(store, config, name, False)
             apply_feeds(store, config)
             return {"saved": True}
         return mutate(pause)
@@ -363,6 +377,30 @@ def create_app(store, config, *, updater=None, ai_workspace=None):
     def subscription(body: FeedSettings, x_sociolit_token: str | None = Header(default=None)):
         authorize(x_sociolit_token)
         return mutate(lambda: configure_feed(store, config, body.name, body.url, body.enabled))
+
+    def journal_mutation(function):
+        def save():
+            if jobs.snapshot()["state"] == "running":
+                raise RuntimeError("请等待后台任务完成后再修改订阅。")
+            ensure_library_available()
+            return function()
+        return mutate(save)
+
+    @app.get("/api/journals")
+    def journals_settings(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        return subscription_views(config)
+
+    @app.post("/api/journals")
+    def save_journal(body: JournalSettings, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        return journal_mutation(lambda: configure_journal(store, config, body.name, body.provider,
+                                url=body.url, issns=body.issns, feed_title=body.feed_title))
+
+    @app.post("/api/journals/toggle")
+    def journal_toggle(body: JournalToggle, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        return journal_mutation(lambda: toggle_journal(store, config, body.name, body.enabled))
 
     @app.post("/api/zotero/check")
     def check_zotero(x_sociolit_token: str | None = Header(default=None)):

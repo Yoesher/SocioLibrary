@@ -3,6 +3,16 @@ const assert=require('node:assert/strict');
 const C=require('../../src/sociolit/static/graph-core.js');
 const node=id=>({id,title:id,current:true,tags:[],authors:[]});
 const edge=(source,target,origin='tags',id='x')=>({id,source,target,origin,label:'evidence'});
+
+test('adaptive labels avoid overlap, retain focus and reveal papers on zoom',()=>{
+ const labels=[{id:'near',x:20,y:0,width:100,height:20,priority:8},{id:'focus',x:0,y:0,width:100,height:20,priority:1e6},{id:'far',x:220,y:0,width:100,height:20,priority:1}];
+ const before=C.clone(labels);
+ assert.deepEqual(C.labelIds(labels,.25),['focus']);
+ assert.deepEqual(C.labelIds(labels,1),['focus','far']);
+ const spread=labels.map(n=>({...n,x:n.x*7}));
+ assert.deepEqual(C.labelIds(spread,2),['focus','near','far']);
+ assert.deepEqual(labels,before);
+});
 test('expansion retains existing nodes, stable undirected edges and manual directions',()=>{
  const base={nodes:[node('a'),node('b')],edges:[edge('a','b'),edge('a','b','manual','ab')]};
  const before=C.clone(base),incoming={nodes:[node('b'),node('c')],edges:[edge('b','a'),edge('b','a','manual','ba'),edge('b','c')]};

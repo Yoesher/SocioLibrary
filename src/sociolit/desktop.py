@@ -288,7 +288,7 @@ def main():
                 assert client.get(url + "/static/app.js").status_code == 200
                 assert client.get(url + "/static/ai.js").status_code == 200
                 assert client.get(url + "/static/literature.js").status_code == 200
-                for asset in ('network.js', 'papers.js', 'navigation.js', 'desktop-ui.css', 'cytoscape-3.35.0.min.js', 'cytoscape-LICENSE.txt'):
+                for asset in ('journals.js', 'network.js', 'papers.js', 'navigation.js', 'desktop-ui.css', 'cytoscape-3.35.0.min.js', 'cytoscape-LICENSE.txt'):
                     assert client.get(url + '/static/' + asset).status_code == 200
                 paper_results = client.post(url + '/api/search/papers', json={'query': 'synthetic', 'mode': 'fulltext'},
                     headers={'X-Sociolit-Token': status['token']}).json()
@@ -299,6 +299,8 @@ def main():
                 assert client.get(url + '/static/design-system.css').status_code == 200
                 assert client.get(url + '/static/graph-core.js').status_code == 200
                 assert client.get(url + '/static/graph-studio.css').status_code == 200
+                configured_journals = client.get(url + '/api/journals', headers={'X-Sociolit-Token': status['token']}).json()
+                assert any(j['name'] == 'Synthetic Custom Journal' and not j['enabled'] for j in configured_journals)
                 expansion = client.post(url + '/api/graph/expand',
                     headers={'X-Sociolit-Token': status['token']},
                     json={'seed': 'synthetic:item', 'known_ids': ['synthetic:item'], 'include_auto': False})
