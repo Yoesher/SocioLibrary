@@ -1,5 +1,7 @@
 # SocioLibrary 文档
 
+[简体中文](../README.md) · [English quick start](en/quick-start.md)
+
 ## 使用软件
 
 - [Windows 安装、使用与升级](windows.md)
@@ -22,6 +24,7 @@
 - [同类项目调研](similar-projects.md)
 - [新一轮同类工具调研与优化取舍](ecosystem-review-2026-11.md)
 - [实际验证记录](validation.md)
+- [维护、名称与发行资源规范](releasing.md)
 - [贡献指南](../CONTRIBUTING.md) · [开发计划](../ROADMAP.md)
 - [版本记录](../CHANGELOG.md) · [安全与隐私](../SECURITY.md)
 

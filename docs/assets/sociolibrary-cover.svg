@@ -1,50 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
-<title id="title">SocioLibrary</title><desc id="desc">Windows 本地文献工作台，Apple、Windows、Material 三套界面风格示意。</desc>
-<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#edf4ff"/><stop offset="1" stop-color="#f7f6fb"/></linearGradient></defs>
-<rect width="1200" height="340" rx="24" fill="url(#bg)"/>
-<g font-family="Segoe UI,Microsoft YaHei,sans-serif"><rect x="40" y="40" width="44" height="44" rx="13" fill="#086ad8"/><text x="62" y="72" text-anchor="middle" font-size="31" font-weight="700" fill="white">S</text><text x="99" y="72" font-size="34" font-weight="650" fill="#172439">SocioLibrary</text>
-<text x="40" y="132" font-size="28" font-weight="600" fill="#172439">让文献，从收藏走向研究。</text>
-<text x="40" y="172" font-size="17" fill="#5f6f84">本地优先的 Windows 文献工作台</text>
-<text x="40" y="239" font-size="15" fill="#38618e">Zotero · 中英检索 · 阅读与比较</text>
-<text x="40" y="278" font-size="13" fill="#7a8799">三套完整风格，独立配色。</text>
-
-<g transform="translate(507 67)"><rect width="201" height="183" rx="14" fill="#f1f5fc" stroke="#d9e1ed"/>
-<rect x="7" y="8" width="48" height="167" rx="10" fill="#ffffff"/><rect x="63" y="8" width="130" height="21" rx="8" fill="white"/>
-<rect x="13" y="42" width="35" height="4" rx="4" fill="#b7c3d4"/>
-<rect x="13" y="66" width="35" height="9" rx="4" fill="#1478e4"/>
-<rect x="13" y="90" width="35" height="4" rx="4" fill="#b7c3d4"/>
-<rect x="13" y="114" width="35" height="4" rx="4" fill="#b7c3d4"/>
-<rect x="13" y="138" width="35" height="4" rx="4" fill="#b7c3d4"/>
-<rect x="63" y="40" width="127" height="123" rx="10" fill="white"/>
-<rect x="73" y="53" width="67" height="6" rx="2" fill="#728399"/>
-<rect x="73" y="75" width="98" height="4" rx="2" fill="#d7dee8"/>
-<rect x="73" y="88" width="89" height="4" rx="2" fill="#d7dee8"/>
-<rect x="73" y="101" width="94" height="4" rx="2" fill="#d7dee8"/>
-<rect x="73" y="126" width="73" height="21" rx="10" fill="#1478e4" opacity=".15"/><text x="100" y="216" text-anchor="middle" font-size="16" font-weight="600" fill="#465469">Apple</text></g>
-<g transform="translate(727 67)"><rect width="201" height="183" rx="4" fill="#edf1f6" stroke="#d9e1ed"/>
-<path d="M0 4Q0 0 4 0H54V183H4Q0 183 0 179Z" fill="#e3e9f1"/><rect x="59" y="7" width="142" height="176" rx="5" fill="white" stroke="#d9e1ed"/>
-<rect x="7" y="42" width="41" height="4" rx="1" fill="#b7c3d4"/>
-<rect x="7" y="66" width="41" height="9" rx="1" fill="#1676ce"/>
-<rect x="7" y="90" width="41" height="4" rx="1" fill="#b7c3d4"/>
-<rect x="7" y="114" width="41" height="4" rx="1" fill="#b7c3d4"/>
-<rect x="7" y="138" width="41" height="4" rx="1" fill="#b7c3d4"/>
-<rect x="68" y="40" width="122" height="123" rx="2" fill="white"/>
-<rect x="78" y="53" width="67" height="6" rx="2" fill="#728399"/>
-<rect x="78" y="75" width="98" height="4" rx="2" fill="#d7dee8"/>
-<rect x="78" y="88" width="89" height="4" rx="2" fill="#d7dee8"/>
-<rect x="78" y="101" width="94" height="4" rx="2" fill="#d7dee8"/>
-<rect x="78" y="126" width="73" height="21" rx="3" fill="#1676ce" opacity=".15"/><text x="100" y="216" text-anchor="middle" font-size="16" font-weight="600" fill="#465469">Windows</text></g>
-<g transform="translate(947 67)"><rect width="201" height="183" rx="20" fill="#f4eff9" stroke="#d9e1ed"/>
-<rect x="6" y="7" width="28" height="169" rx="14" fill="#e8ddf3"/>
-<rect x="13" y="34" width="14" height="10" rx="5" fill="#b2a2c6"/>
-<rect x="13" y="58" width="14" height="10" rx="5" fill="#76569d"/>
-<rect x="13" y="82" width="14" height="10" rx="5" fill="#b2a2c6"/>
-<rect x="13" y="106" width="14" height="10" rx="5" fill="#b2a2c6"/>
-<rect x="13" y="130" width="14" height="10" rx="5" fill="#b2a2c6"/>
-<rect x="43" y="40" width="147" height="123" rx="17" fill="white"/>
-<rect x="53" y="53" width="67" height="6" rx="2" fill="#728399"/>
-<rect x="53" y="75" width="98" height="4" rx="2" fill="#d7dee8"/>
-<rect x="53" y="88" width="89" height="4" rx="2" fill="#d7dee8"/>
-<rect x="53" y="101" width="94" height="4" rx="2" fill="#d7dee8"/>
-<rect x="53" y="126" width="73" height="21" rx="10" fill="#76569d" opacity=".15"/><text x="100" y="216" text-anchor="middle" font-size="16" font-weight="600" fill="#465469">Material</text></g>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="title description">
+  <title id="title">SocioLibrary</title>
+  <desc id="description">A green book beside a quiet network of connected papers. A local-first, open-source literature workspace.</desc>
+  <defs>
+    <linearGradient id="surface" x2="1" y2="1"><stop stop-color="#f3f7f4"/><stop offset="1" stop-color="#f8f9fb"/></linearGradient>
+    <filter id="paper" x="-30%" y="-30%" width="170%" height="180%"><feDropShadow dy="7" stdDeviation="10" flood-color="#183a2e" flood-opacity=".055"/></filter>
+  </defs>
+  <rect x=".5" y=".5" width="1279" height="359" rx="30" fill="url(#surface)" stroke="#e5ebe7"/>
+  <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif">
+    <rect x="62" y="110" width="64" height="64" rx="18" fill="#2e6251"/>
+    <path d="M75 124l18 4v34l-18-4zm20 4l18-4v34l-18 4z" fill="#f8fcf8"/>
+    <path d="M80 134l8 2m-8 6l8 2m-8 6l8 2m12-16l8-2m-8 10l8-2m-8 10l8-2" stroke="#7b9b88" stroke-width="1.2" stroke-linecap="round"/>
+    <text x="148" y="158" font-size="61" font-weight="650" letter-spacing="-2.6" fill="#17362b">SocioLibrary</text>
+    <text x="65" y="207" font-size="22" letter-spacing="-.35" fill="#5d746a">Your literature, connected.</text>
+    <text x="66" y="286" font-size="10.5" font-weight="600" letter-spacing="2.1" fill="#6e847a">LOCAL FIRST</text>
+    <circle cx="184" cy="282" r="1.8" fill="#9aada2"/>
+    <text x="202" y="286" font-size="10.5" font-weight="600" letter-spacing="2.1" fill="#6e847a">OPEN SOURCE</text>
+  </g>
+  <g fill="none" stroke="#bdcfc4" stroke-width="1.2">
+    <path d="M817 103C866 103 867 145 914 145M818 271C876 271 867 219 914 219M1064 145C1090 145 1093 104 1127 104M1064 219C1091 219 1093 267 1125 267"/>
+    <path d="M818 103C793 154 795 230 818 271M1127 104C1155 155 1155 217 1125 267" opacity=".4"/>
+  </g>
+  <g filter="url(#paper)" fill="#fff" stroke="#e1e8e3">
+    <rect x="702" y="60" width="118" height="86" rx="12"/><rect x="699" y="229" width="123" height="85" rx="12"/>
+    <rect x="1124" y="60" width="111" height="86" rx="12"/><rect x="1122" y="226" width="113" height="86" rx="12"/>
+    <rect x="912" y="80" width="154" height="205" rx="15"/>
+  </g>
+  <g fill="#c7d6cd">
+    <rect x="720" y="79" width="58" height="5" rx="2.5"/><rect x="720" y="96" width="81" height="3" rx="1.5"/><rect x="720" y="108" width="72" height="3" rx="1.5"/><rect x="720" y="120" width="44" height="3" rx="1.5"/>
+    <rect x="718" y="248" width="59" height="5" rx="2.5"/><rect x="718" y="265" width="84" height="3" rx="1.5"/><rect x="718" y="277" width="65" height="3" rx="1.5"/><rect x="718" y="289" width="74" height="3" rx="1.5"/>
+    <rect x="1142" y="79" width="53" height="5" rx="2.5"/><rect x="1142" y="96" width="75" height="3" rx="1.5"/><rect x="1142" y="108" width="63" height="3" rx="1.5"/><rect x="1142" y="120" width="42" height="3" rx="1.5"/>
+    <rect x="1140" y="245" width="57" height="5" rx="2.5"/><rect x="1140" y="262" width="76" height="3" rx="1.5"/><rect x="1140" y="274" width="65" height="3" rx="1.5"/><rect x="1140" y="286" width="41" height="3" rx="1.5"/>
+  </g>
+  <rect x="936" y="106" width="60" height="6" rx="3" fill="#4d8069"/>
+  <g fill="#dce5df"><rect x="936" y="128" width="106" height="4" rx="2"/><rect x="936" y="142" width="95" height="4" rx="2"/><rect x="936" y="156" width="103" height="4" rx="2"/><rect x="936" y="222" width="106" height="4" rx="2"/><rect x="936" y="236" width="84" height="4" rx="2"/><rect x="936" y="250" width="94" height="4" rx="2"/></g>
+  <rect x="936" y="177" width="106" height="27" rx="6" fill="#e8f1eb"/><path d="M948 190h71" stroke="#9ab9a5" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#5e967a" stroke="#f5f8f5" stroke-width="3"><circle cx="861" cy="124" r="4.8"/><circle cx="861" cy="247" r="4"/><circle cx="1093" cy="124" r="4.2"/><circle cx="1092" cy="245" r="4.5"/></g>
+</svg>
