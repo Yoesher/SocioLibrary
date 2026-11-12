@@ -15,6 +15,10 @@ if sys.platform != 'darwin':
 root = Path(__file__).resolve().parents[1]
 os.chdir(root)
 version = tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+from sociolit import __version__
+
+if version != __version__:
+    raise SystemExit('Project/runtime version mismatch')
 arch = platform.machine()
 if arch not in ('arm64', 'x86_64'):
     raise SystemExit('Unsupported Mac architecture')

@@ -2,13 +2,21 @@ import json
 import sqlite3
 import subprocess
 import sys
+import tomllib
 from hashlib import sha256
+from pathlib import Path
 
 import pytest
 
 from sociolit.smoke import seed_upgrade_fixture
 from sociolit.status_snapshot import LibraryStatus
 from sociolit.store import Store
+
+
+def test_distribution_and_runtime_versions_match():
+    from sociolit import __version__
+    project = tomllib.loads((Path(__file__).resolve().parents[1] / 'pyproject.toml').read_text('utf-8'))
+    assert project['project']['version'] == __version__
 
 
 @pytest.fixture

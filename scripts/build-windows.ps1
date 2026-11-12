@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath (Split-Path -Parent $PSScriptRoot)
-$version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+$version = python -c "import tomllib; from sociolit import __version__; value=tomllib.load(open('pyproject.toml','rb'))['project']['version']; assert value==__version__, 'Project/runtime version mismatch'; print(value)"
 if ($LASTEXITCODE -ne 0) { throw 'Cannot read application version' }
 & python scripts/create_icon.py
 if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed' }
