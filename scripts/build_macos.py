@@ -10,13 +10,13 @@ import sys
 import tomllib
 from pathlib import Path
 
+from sociolit import __version__
+
 if sys.platform != 'darwin':
     raise SystemExit('macOS builds must run on macOS.')
 root = Path(__file__).resolve().parents[1]
 os.chdir(root)
 version = tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
-from sociolit import __version__
-
 if version != __version__:
     raise SystemExit('Project/runtime version mismatch')
 arch = platform.machine()
