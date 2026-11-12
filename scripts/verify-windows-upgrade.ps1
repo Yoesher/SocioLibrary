@@ -29,14 +29,29 @@ function Run-Setup($exe, $arguments, $mustSucceed = $true) {
     if ($mustSucceed -and $process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
     return $process.ExitCode
 }
-gh release download v0.12.0 --repo $env:GITHUB_REPOSITORY --pattern 'SocioLibrary-0.12.0-Windows-x64-Setup.exe' --dir $root
+gh release download v0.12.2 --repo $env:GITHUB_REPOSITORY --pattern 'SocioLibrary-0.12.2-Windows-x64-Setup.exe' --dir $root
 if ($LASTEXITCODE -ne 0) { throw 'Cannot retrieve previous public installer' }
-$previous = Join-Path $root 'SocioLibrary-0.12.0-Windows-x64-Setup.exe'
+$previous = Join-Path $root 'SocioLibrary-0.12.2-Windows-x64-Setup.exe'
 $common = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-')
 Run-Setup $previous ($common + @("/DIR=`"$installDir`"")) | Out-Null
 $installedExe = Join-Path $installDir 'SocioLibrary.exe'
 $oldHash = (Get-FileHash -LiteralPath $installedExe).Hash
 Assert-ResearchUnchanged
+$bundle = Get-Content dist/SocioLibrary/bundle-manifest.json -Raw | ConvertFrom-Json
+$modifiedHeader = $bundle.pruned | ForEach-Object { Join-Path $installDir $_.path } | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $modifiedHeader) { throw 'Previous installation has no expected developer header' }
+Add-Content -LiteralPath $modifiedHeader -Value 'Synthetic user-modified header canary'
+$modifiedHeaderHash = (Get-FileHash -LiteralPath $modifiedHeader).Hash
+$privateCanary = Join-Path $installDir '_internal/torch/include/synthetic-user-paper.pdf'
+[System.IO.File]::WriteAllText($privateCanary, 'Synthetic private canary; never delete as part of runtime cleanup')
+$privateCanaryHash = (Get-FileHash -LiteralPath $privateCanary).Hash
+$desktop = [Environment]::GetFolderPath('Desktop')
+$shortcutFile = Join-Path $desktop 'SocioLibrary.lnk'
+if (Test-Path -LiteralPath $shortcutFile) { throw 'Unexpected existing runner shortcut' }
+$shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutFile)
+$shortcut.TargetPath = $installedExe
+$shortcut.Description = 'SocioLibrary old descriptive shortcut'
+$shortcut.Save()
 $newSetup = (Resolve-Path "release-dist/SocioLibrary-$version-Windows-x64-Setup.exe").Path
 $ready = Join-Path $root 'mutex-ready.txt'
 $helper = Join-Path $root 'hold-mutex.py'
@@ -68,6 +83,17 @@ if (-not (Test-Path -LiteralPath $installedExe) -or (Get-FileHash -LiteralPath $
     throw 'New installer did not replace the original custom installation'
 }
 Assert-ResearchUnchanged
+$cleanup = Get-Content (Join-Path $installDir 'bundle-cleanup.json') -Raw | ConvertFrom-Json
+if ($cleanup.removed_files -lt 8000 -or $cleanup.removed_bytes -lt 30000000) { throw 'Overlay upgrade did not remove verified development files' }
+if ((Get-FileHash -LiteralPath $modifiedHeader).Hash -ne $modifiedHeaderHash -or
+    (Get-FileHash -LiteralPath $privateCanary).Hash -ne $privateCanaryHash) { throw 'Runtime cleanup modified a user canary' }
+$shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutFile)
+if ($shortcut.Description -ne 'SocioLibrary' -or $shortcut.TargetPath -ne $installedExe) { throw 'Existing shortcut was not normalized' }
+$info = (Get-Item -LiteralPath $installedExe).VersionInfo
+if ($info.ProductName -ne 'SocioLibrary' -or $info.FileDescription -ne 'SocioLibrary' -or $info.ProductVersion -ne $version) {
+    throw 'Executable application identity is not normalized'
+}
+'Bundle cleanup verified: legacy development files removed; modified headers and private canaries preserved; shortcut and executable named SocioLibrary.'
 $smokeData = Join-Path $root 'inherited-fixture'
 $process = Start-Process -FilePath $installedExe -ArgumentList @('--smoke-test','--data-dir',"`"$smokeData`"") -PassThru -WindowStyle Hidden
 if (-not $process.WaitForExit(180000) -or $process.ExitCode -ne 0) { throw 'Installed upgrade smoke check failed' }

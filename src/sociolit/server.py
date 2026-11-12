@@ -3,6 +3,7 @@ import json
 import secrets
 import sys
 import threading
+from contextlib import asynccontextmanager
 from hashlib import sha256
 from html import escape
 from pathlib import Path
@@ -29,6 +30,7 @@ from .scope import active_scope
 from .semantic import LocalEmbedder, search_vectors
 from .service import build_configured_embeddings, sync_zotero
 from .software_updates import UpdateError, UpdateManager
+from .status_snapshot import LibraryStatus
 from .subscriptions import apply_feeds, configure_feed, configure_journal, subscription_views, toggle_journal
 from .upgrades import upgrade_status
 from .workbench_routes import attach_workbench
@@ -105,7 +107,16 @@ def create_app(store, config, *, updater=None, ai_workspace=None, native_cocoa=F
     initialize_ocr(store)
     apply_feeds(store, config)
     apply_preferences(config, store.directory)
-    app = FastAPI(title="SocioLibrary", docs_url=None, redoc_url=None, openapi_url=None)
+    status_snapshot = LibraryStatus(store)
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        try:
+            yield
+        finally:
+            status_snapshot.close()
+
+    app = FastAPI(title="SocioLibrary", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
     token = secrets.token_urlsafe(32)
     operation_lock = threading.Lock()
@@ -220,30 +231,8 @@ def create_app(store, config, *, updater=None, ai_workspace=None, native_cocoa=F
                 library_busy = False
         except Timeout:
             library_busy = True
-        with store.connect() as db:
-            problems = [dict(r) for r in db.execute("""SELECT i.title,f.status,f.detail,
-                (SELECT count(*) FROM ocr_pages op WHERE op.file_id=f.id) AS ocr_pages FROM files f
-                JOIN items i ON i.id=f.item_id WHERE f.detail != '' LIMIT 10""")]
-            problem_count = db.execute("SELECT COUNT(*) FROM files WHERE detail != ''").fetchone()[0]
-        last_import = store.state("last_import")
-        if isinstance(last_import, dict):
-            last_import = {k: v for k, v in last_import.items() if k != "warnings"}
-        scope = store.state("semantic_scope")
         scope_label = "、".join(config.get("semantic", {}).get("collection_keywords", []))
-        scope_progress = None
-        catalog_progress = {"done": 0, "total": 0, "ready": False}
-        manifest = Path(model_path) / "sociolit-model.json"
-        if manifest.is_file():
-            catalog_progress = catalog_semantic.status(store, sha256(manifest.read_bytes()).hexdigest())
-        if isinstance(scope, dict) and scope.get("label") == scope_label and scope.get("item_ids") and manifest.is_file():
-            model_key = sha256(manifest.read_bytes()).hexdigest()
-            with store.connect() as db:
-                db.execute("CREATE TEMP TABLE scope_items(id TEXT PRIMARY KEY)")
-                db.executemany("INSERT INTO scope_items VALUES(?)", [(item,) for item in scope["item_ids"]])
-                total = db.execute("SELECT count(*) FROM chunks c JOIN scope_items s ON s.id=c.item_id").fetchone()[0]
-                done = db.execute("""SELECT count(*) FROM vectors v JOIN chunks c ON c.id=v.chunk_id
-                    JOIN scope_items s ON s.id=c.item_id WHERE v.model=?""", (model_key,)).fetchone()[0]
-                scope_progress = {"done": done, "total": total}
+        snapshot = status_snapshot.get(scope_label, model_path)
         journals = []
         for journal in subscription_views(config):
             homepage = journal.get("homepage", "")
@@ -254,15 +243,13 @@ def create_app(store, config, *, updater=None, ai_workspace=None, native_cocoa=F
             except ValueError:
                 homepage = ""
             journals.append(dict(journal, homepage=homepage))
-        return {"semantic_runtime": importlib.util.find_spec("sentence_transformers") is not None, "platform": sys.platform, "data_directory": str(store.path.resolve().parent), "stats": store.stats(), "token": token, "last_import": last_import,
-                "import_incomplete": store.state("import_incomplete", False),
-                "discovery": store.state("last_discovery"), "file_notices": problems, "file_notice_count": problem_count,
+        return {**snapshot, "semantic_runtime": importlib.util.find_spec("sentence_transformers") is not None, "platform": sys.platform, "data_directory": str(store.path.resolve().parent), "token": token,
                 "pdf_roots_configured": bool(allowed_roots(config)), "semantic_model_ready": (Path(model_path) / "sociolit-model.json").is_file(),
-                "semantic_scope": scope_label, "semantic_progress": scope_progress, "catalog_progress": catalog_progress, "library_busy": library_busy,
+                "semantic_scope": scope_label, "library_busy": library_busy,
                 "journals": journals, "job": jobs.snapshot(), "version": __import__("sociolit").__version__,
                 "pdf_roots": [str(p) for p in allowed_roots(config)],
                 "collection_keywords": config.get("semantic", {}).get("collection_keywords", []),
-                "ocr_pages": store.state("ocr_summary", {}).get("pages", 0), "upgrade": upgrade_status(store.directory),
+                "upgrade": upgrade_status(store.directory),
                 "software_update": app.state.updater.snapshot()}
 
     @app.post("/api/software-update/check")

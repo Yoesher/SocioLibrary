@@ -215,7 +215,7 @@ class StartupWindow:
             def size(value):
                 return int(value * scale)
             screen = _function(user, 'GetSystemMetrics', ctypes.c_int, ctypes.c_int)
-            hwnd = create(0, name, 'SocioLibrary · 正在启动', 0x00ca0000,
+            hwnd = create(0, name, 'SocioLibrary', 0x00ca0000,
                           (screen(0) - size(540)) // 2, (screen(1) - size(265)) // 2,
                           size(540), size(265), None, None, instance, None)
             if not hwnd:

@@ -46,6 +46,7 @@ info = app / 'Contents/Info.plist'
 with info.open('rb') as f:
     data = plistlib.load(f)
 data.update(CFBundleShortVersionString=version, CFBundleVersion=version,
+            CFBundleDisplayName='SocioLibrary', CFBundleName='SocioLibrary',
             NSHighResolutionCapable=True, LSMinimumSystemVersion='15.0')
 with info.open('wb') as f:
     plistlib.dump(data, f)

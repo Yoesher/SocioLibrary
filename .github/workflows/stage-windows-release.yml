@@ -37,9 +37,10 @@ jobs:
             $parts = $line -split '  ',2
             if ($parts.Length -ne 2 -or $parts[1] -notmatch '^SocioLibrary-[0-9.]+-Windows-x64-(Setup.exe|Portable.zip)$') { throw 'Unexpected artifact filename' }
             if ((Get-FileHash (Join-Path artifacts $parts[1]) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $parts[0]) { throw 'Artifact checksum mismatch' }
+            Write-Output ("VERIFIED-ASSET " + $parts[0] + "  " + $parts[1])
           }
       - name: Upload assets to the draft only
         shell: pwsh
         run: |
-          gh release upload $env:RELEASE_TAG artifacts/*.exe artifacts/*.zip artifacts/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --clobber
+          gh release upload $env:RELEASE_TAG artifacts/*.exe artifacts/*.zip --repo $env:GITHUB_REPOSITORY --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed' }

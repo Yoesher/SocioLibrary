@@ -107,7 +107,8 @@ jobs:
                   digest,name=line.split('  ',1)
                   assert name in expected and name not in checked
                   assert hashlib.sha256((folder/name).read_bytes()).hexdigest()==digest
+                  print('VERIFIED-ASSET '+digest+'  '+name)
                   checked.add(name)
           PY
       - name: Upload verified files to draft
-        run: gh release upload "$RELEASE_TAG" artifacts/arm64/* artifacts/x86_64/* --repo "$GITHUB_REPOSITORY" --clobber
+        run: gh release upload "$RELEASE_TAG" artifacts/arm64/*.zip artifacts/x86_64/*.zip --repo "$GITHUB_REPOSITORY" --clobber

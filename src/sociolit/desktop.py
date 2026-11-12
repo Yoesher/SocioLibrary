@@ -11,14 +11,9 @@ import time
 import uuid
 from pathlib import Path
 
-import httpx
-import uvicorn
 from filelock import FileLock, Timeout
 
 from . import __version__
-from .config import read_config
-from .server import create_app
-from .store import Store
 from .upgrades import (
     UpgradeCancelled,
     UpgradeError,
@@ -30,6 +25,7 @@ from .upgrades import (
 
 
 def base_config():
+    from .config import read_config
     bundled = Path(__file__).parent / "defaults" / "public-journals.toml"
     source = Path(__file__).resolve().parents[2] / "config" / "public-journals.toml"
     return read_config(bundled if bundled.is_file() else source)
@@ -65,6 +61,10 @@ def initialize_desktop_library(directory, progress=None):
             report = prepare_upgrade(directory, __version__, progress=progress)
             if progress:
                 progress("加载资料与设置", None)
+            # Keep FastAPI/PDF/model dependencies behind the visible startup
+            # window; duplicate launches should not load the application stack.
+            from .server import create_app
+            from .store import Store
             config = base_config()
             store = Store(directory)
             if not (directory / "preferences.json").exists():
@@ -262,11 +262,29 @@ def main():
     parser.add_argument("--gui-smoke-test", action="store_true")
     parser.add_argument("--data-dir")
     parser.add_argument("--update-journals", action="store_true")
+    parser.add_argument('--maintenance-clean-runtime', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.gui_smoke_test and (os.environ.get('GITHUB_ACTIONS') != 'true' or not args.data_dir):
         raise SystemExit('GUI smoke mode is limited to isolated build runners')
     if sys.platform not in ("win32", "darwin"):
         raise SystemExit("Desktop distribution supports Windows and macOS.")
+    if args.maintenance_clean_runtime:
+        if (os.name != 'nt' or not getattr(sys, 'frozen', False) or args.data_dir
+                or args.smoke_test or args.gui_smoke_test or args.update_journals):
+            raise SystemExit('Runtime maintenance is restricted to the installed Windows application')
+        from .runtime_cleanup import clean_installation
+        from .upgrades import _write
+        program = Path(sys.executable).resolve().parent
+        try:
+            report = clean_installation(program)
+        except Exception:
+            # Maintenance failure must not prevent launching the installed app.
+            report = {'errors': 1, 'skipped': True}
+        try:
+            _write(program / 'bundle-cleanup.json', report)
+        except OSError:
+            pass
+        return
     try:
         directory = resolve_desktop_directory(args.data_dir)
     except UpgradeError as exc:
@@ -317,6 +335,7 @@ def main():
         sock = socket.socket()
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
+        import uvicorn
         server = uvicorn.Server(uvicorn.Config(app, log_config=None, access_log=False))
         thread = threading.Thread(target=lambda: server.run(sockets=[sock]), daemon=True)
         thread.start()
@@ -330,12 +349,16 @@ def main():
             raise RuntimeError("本地服务启动超时。")
         url = f"http://127.0.0.1:{port}"
         if args.smoke_test:
+            import httpx
             assert Path(__file__).with_name("ocr.ps1").is_file(), "Windows OCR bridge missing from package"
             assert Path(__file__).with_name("update.ps1").is_file(), "Windows updater helper missing from package"
             import webview  # noqa: F401
             from pypdf import PdfWriter
             if not (sys.platform == 'darwin' and __import__('platform').machine() == 'x86_64'):
-                from sentence_transformers import SentenceTransformer  # noqa: F401
+                from .semantic_smoke import verify as verify_semantic
+                semantic_report = verify_semantic(directory)
+            else:
+                semantic_report = {'semantic_roundtrip': False, 'semantic_runtime': 'not-included'}
 
             from .indexing import extract_pdf
             writer = PdfWriter()
@@ -351,7 +374,7 @@ def main():
                 assert client.get(url + "/static/app.js").status_code == 200
                 assert client.get(url + "/static/ai.js").status_code == 200
                 assert client.get(url + "/static/literature.js").status_code == 200
-                for asset in ('graph-notebooks.js', 'journal-inbox.js', 'journals.js', 'network.js', 'papers.js', 'navigation.js', 'desktop-ui.css', 'cytoscape-3.35.0.min.js', 'cytoscape-LICENSE.txt'):
+                for asset in ('status-polling.js', 'graph-notebooks.js', 'journal-inbox.js', 'journals.js', 'network.js', 'papers.js', 'navigation.js', 'desktop-ui.css', 'cytoscape-3.35.0.min.js', 'cytoscape-LICENSE.txt'):
                     assert client.get(url + '/static/' + asset).status_code == 200
                 paper_results = client.post(url + '/api/search/papers', json={'query': 'synthetic', 'mode': 'fulltext'},
                     headers={'X-Sociolit-Token': status['token']}).json()
@@ -388,7 +411,7 @@ def main():
             context = native_install_context()
             assert context["supported"] == (sys.platform == "win32" and bool(getattr(sys, "frozen", False)))
             (directory / "smoke-result.json").write_text(json.dumps({"ok": True, "version": __version__,
-                "updater_mode": context["mode"], **inherited}), encoding="utf-8")
+                "updater_mode": context["mode"], **inherited, **semantic_report}), encoding="utf-8")
             return
         if not args.gui_smoke_test:
             remember_directory(directory)
@@ -399,7 +422,7 @@ def main():
         bridge._store = store
         bridge._native_lock = threading.Lock()
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
-        bridge._window = webview.create_window("SocioLibrary · 社会学文献知识库", url, js_api=bridge,
+        bridge._window = webview.create_window("SocioLibrary", url, js_api=bridge,
                                              width=1280, height=860, min_size=(960, 680),
                                              background_color="#f4f5f0", confirm_close=True)
         if startup:
@@ -436,11 +459,12 @@ def main():
                     # return-value worker. Wait until its promise has resolved.
                     bridge._window.run_js("window.pywebview.api.update_context().then(function(c){window.__sociolitSmokeContext=c.mode;}).catch(function(){window.__sociolitSmokeContext='error';});")
                     for _ in range(200):
-                        value.update(bridge._window.evaluate_js("({version:document.getElementById('version').textContent, notebooks:!!document.getElementById('graph-view-save'), inbox:!!document.getElementById('journal-inbox-form'), native_bridge:window.__sociolitSmokeContext||''})"))
+                        value.update(bridge._window.evaluate_js("({title:document.title,version:document.getElementById('version').textContent, notebooks:!!document.getElementById('graph-view-save'), inbox:!!document.getElementById('journal-inbox-form'), native_bridge:window.__sociolitSmokeContext||''})"))
                         if isinstance(value, dict) and value.get('native_bridge') and value.get('version'):
                             break
                         time.sleep(.05)
                     value['ok'] = (__version__ in str(value.get('version'))
+                                   and value.get('title') == 'SocioLibrary'
                                    and value.get('notebooks') is True and value.get('inbox') is True
                                    and value.get('native_bridge') == native_install_context()['mode']
                                    and (os.name != 'nt' or (value.get('startup_window') and value.get('repeat_launch'))))
