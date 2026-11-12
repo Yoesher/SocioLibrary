@@ -46,6 +46,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: ./scripts/verify-windows-upgrade.ps1
+      - name: Exercise startup window and repeated launch in the frozen GUI
+        shell: pwsh
+        run: |
+          $data = Join-Path $env:RUNNER_TEMP 'sociolit-frozen-gui'
+          $process = Start-Process -FilePath ./dist/SocioLibrary/SocioLibrary.exe -ArgumentList @('--gui-smoke-test','--data-dir',$data) -PassThru -WindowStyle Hidden
+          if (-not $process.WaitForExit(180000) -or $process.ExitCode -ne 0) { throw 'Native GUI check did not exit successfully' }
+          $result = Get-Content "$data/gui-smoke-result.json" -Raw | ConvertFrom-Json
+          $result | ConvertTo-Json
+          if (-not $result.ok -or -not $result.startup_window -or -not $result.repeat_launch) { throw 'Startup or repeated-launch check failed' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: SocioLibrary-Windows-x64

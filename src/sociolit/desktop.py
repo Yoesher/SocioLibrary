@@ -20,6 +20,7 @@ from .config import read_config
 from .server import create_app
 from .store import Store
 from .upgrades import (
+    UpgradeCancelled,
     UpgradeError,
     complete_upgrade,
     prepare_upgrade,
@@ -57,11 +58,13 @@ def installer_mutex():
     return kernel, handle
 
 
-def initialize_desktop_library(directory):
+def initialize_desktop_library(directory, progress=None):
     """Snapshot the old database before any current-version schema initialization."""
     try:
         with FileLock(str(directory / "library.lock"), timeout=1):
-            report = prepare_upgrade(directory, __version__)
+            report = prepare_upgrade(directory, __version__, progress=progress)
+            if progress:
+                progress("加载资料与设置", None)
             config = base_config()
             store = Store(directory)
             if not (directory / "preferences.json").exists():
@@ -286,21 +289,31 @@ def main():
         lock.acquire()
     except Timeout:
         if not args.update_journals:
-            message("SocioLibrary 已在运行，请在任务栏中打开现有窗口。")
+            from .startup import activate_existing
+            if not activate_existing(directory):
+                message("SocioLibrary 正在启动或运行。请稍候查看启动进度窗口；若仍未显示，请查看资料目录 logs 中的启动记录。")
         return
     server = None
     update_stop = threading.Event()
     kernel = mutex = None
+    startup = instance = None
     try:
         kernel, mutex = installer_mutex()
+        from .startup import DesktopInstance, StartupWindow
+        instance = DesktopInstance(directory)
+        if not (args.smoke_test or args.update_journals):
+            startup = StartupWindow()
+            startup.start()
         if args.smoke_test or args.gui_smoke_test:
             from .smoke import seed_upgrade_fixture
             seed_upgrade_fixture(directory)
-        store, config, app = initialize_desktop_library(directory)
+        store, config, app = initialize_desktop_library(directory, progress=startup.update if startup else None)
         if args.update_journals:
             from .scheduler import discover_due
             discover_due(store, config)
             return
+        if startup:
+            startup.update("打开研究工作台", None)
         sock = socket.socket()
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
@@ -389,7 +402,16 @@ def main():
         bridge._window = webview.create_window("SocioLibrary · 社会学文献知识库", url, js_api=bridge,
                                              width=1280, height=860, min_size=(960, 680),
                                              background_color="#f4f5f0", confirm_close=True)
+        if startup:
+            def finish_startup():
+                startup.close()
+                if startup.cancelled.is_set():
+                    bridge._window.confirm_close = False
+                    bridge._window.destroy()
+            bridge._window.events.loaded += finish_startup
         def start_updates():
+            if startup and startup.cancelled.is_set():
+                return
             from .scheduler import discover_due
             try:
                 app.state.jobs.start("discover", lambda _: discover_due(store, config))
@@ -404,17 +426,24 @@ def main():
                 from .update_install import native_install_context
                 value = {'ok': False}
                 try:
+                    if os.name == 'nt':
+                        import subprocess
+                        value['startup_window'] = bool(startup and startup._ready.is_set())
+                        duplicate = subprocess.run([sys.executable, '--data-dir', str(directory)], timeout=30,
+                                                   check=False)
+                        value['repeat_launch'] = duplicate.returncode == 0
                     # Closing inside a native callback can strand WebKit's pending
                     # return-value worker. Wait until its promise has resolved.
                     bridge._window.run_js("window.pywebview.api.update_context().then(function(c){window.__sociolitSmokeContext=c.mode;}).catch(function(){window.__sociolitSmokeContext='error';});")
                     for _ in range(200):
-                        value = bridge._window.evaluate_js("({version:document.getElementById('version').textContent, notebooks:!!document.getElementById('graph-view-save'), inbox:!!document.getElementById('journal-inbox-form'), native_bridge:window.__sociolitSmokeContext||''})")
+                        value.update(bridge._window.evaluate_js("({version:document.getElementById('version').textContent, notebooks:!!document.getElementById('graph-view-save'), inbox:!!document.getElementById('journal-inbox-form'), native_bridge:window.__sociolitSmokeContext||''})"))
                         if isinstance(value, dict) and value.get('native_bridge') and value.get('version'):
                             break
                         time.sleep(.05)
                     value['ok'] = (__version__ in str(value.get('version'))
                                    and value.get('notebooks') is True and value.get('inbox') is True
-                                   and value.get('native_bridge') == native_install_context()['mode'])
+                                   and value.get('native_bridge') == native_install_context()['mode']
+                                   and (os.name != 'nt' or (value.get('startup_window') and value.get('repeat_launch'))))
                 except Exception as exc:
                     logging.exception('Native GUI check failed')
                     value = {'ok': False, 'error_type': type(exc).__name__}
@@ -433,6 +462,8 @@ def main():
                     pass
         threading.Thread(target=periodic_updates, daemon=True).start()
         webview.start(gui="cocoa" if sys.platform == "darwin" else "edgechromium", debug=False, private_mode=True)
+    except UpgradeCancelled:
+        logging.info("Desktop startup cancelled safely")
     except UpgradeError as exc:
         logging.exception("Upgrade initialization stopped")
         if args.smoke_test or args.gui_smoke_test:
@@ -445,8 +476,12 @@ def main():
         message("启动未完成。研究资料仍保存在原目录，请查看资料目录 logs 中的诊断记录；Windows 窗口组件需要 Microsoft Edge WebView2 Runtime；Mac 请查看应用启动日志。")
     finally:
         update_stop.set()
+        if startup:
+            startup.close()
         if server:
             server.should_exit = True
+        if instance:
+            instance.close()
         lock.release()
         if mutex:
             kernel.CloseHandle(mutex)

@@ -17,6 +17,10 @@ class UpgradeError(RuntimeError):
     pass
 
 
+class UpgradeCancelled(UpgradeError):
+    """A user cancelled before the new version was initialized."""
+
+
 def _version(value):
     if not isinstance(value, str) or not re.fullmatch(r"\d+\.\d+\.\d+", value):
         raise UpgradeError("软件版本记录无效，请保留资料目录并联系维护者。")
@@ -98,9 +102,11 @@ def remember_directory(directory):
     _write(path, {"data_dir": str(physical_directory(directory))})
 
 
-def prepare_upgrade(directory, version):
+def prepare_upgrade(directory, version, progress=None):
     """Call while holding library.lock, before Store or schema initialization."""
     directory = Path(directory)
+    notify = progress or (lambda *_: None)
+    notify("检查资料版本", None)
     marker = directory / "desktop-version.json"
     previous = _read(marker) if marker.exists() else {}
     current = _version(version)
@@ -129,11 +135,16 @@ def prepare_upgrade(directory, version):
     destination = backups / f"{stamp}-to-{version}-{uuid.uuid4().hex[:8]}"
     started = time.monotonic()
 
-    def check_progress(*_):
+    def check_deadline():
         if time.monotonic() - started > 600:
-            raise UpgradeError("升级前备份超时，原库未修改。请关闭其他写入任务后重试。")
+            raise UpgradeError("升级前备份或校验超时，原库未修改。请关闭其他写入任务后重试。")
+
+    def check_progress(_status, remaining, total):
+        check_deadline()
+        notify("备份原资料", int(100 * (total - remaining) / total) if total else 0)
 
     try:
+        notify("备份原资料", 0)
         with tempfile.TemporaryDirectory(prefix=".upgrade-", dir=backups) as temp:
             staging = Path(temp)
             with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as source:
@@ -142,8 +153,31 @@ def prepare_upgrade(directory, version):
                     raise UpgradeError("原数据库未被识别为 SocioLibrary 资料库，已停止初始化；不会向其他数据库写入。")
                 with closing(sqlite3.connect(staging / "library.sqlite3")) as target:
                     source.backup(target, pages=256, progress=check_progress, sleep=0.05)
-                    if target.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+                    notify("校验备份 · 大库可能需要数分钟", None)
+                    interrupted = None
+
+                    def validation_progress():
+                        nonlocal interrupted
+                        try:
+                            check_deadline()
+                            notify("校验备份 · 大库可能需要数分钟", None)
+                            return 0
+                        except UpgradeError as exc:
+                            interrupted = exc
+                            return 1
+
+                    target.set_progress_handler(validation_progress, 10000)
+                    try:
+                        result = target.execute("PRAGMA quick_check").fetchall()
+                    except sqlite3.Error as exc:
+                        if interrupted:
+                            raise interrupted from exc
+                        raise
+                    finally:
+                        target.set_progress_handler(None, 0)
+                    if result != [("ok",)]:
                         raise UpgradeError("升级备份校验失败，原库未修改，请保留资料并联系维护者。")
+            notify("保存升级备份", None)
             for name in ("preferences.json", "desktop-version.json", "software-update.json", "ai-profiles.json"):
                 path = directory / name
                 if path.exists():

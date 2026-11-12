@@ -52,6 +52,7 @@ backups/
 preferences.json
 desktop-version.json
 desktop-location.json
+desktop-instance.json
 software-update.json
 ai-profiles.json
 ai-profiles.lock

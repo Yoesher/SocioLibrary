@@ -19,7 +19,7 @@ def violations(paths):
         if (path.is_symlink() or path.suffix.lower() in BLOCKED_SUFFIXES
                 or any(part in BLOCKED_PARTS for part in parts)
                 or path.name == "config.local.toml" or path.name.endswith(".local.toml")
-                or path.name in {"preferences.json", "desktop-version.json", "desktop-location.json", "software-update.json", "ai-profiles.json", "ai-profiles.lock"}
+                or path.name in {"preferences.json", "desktop-version.json", "desktop-location.json", "desktop-instance.json", "software-update.json", "ai-profiles.json", "ai-profiles.lock"}
                 or path.name.startswith("SocioLibrary-AI")
                 or path.name.startswith("SocioLibrary-文献对照")
                 or path.name.startswith("SocioLibrary-阅读笔记")
