@@ -466,11 +466,15 @@ def main():
         logging.info("Desktop startup cancelled safely")
     except UpgradeError as exc:
         logging.exception("Upgrade initialization stopped")
+        if startup:
+            startup.close()
         if args.smoke_test or args.gui_smoke_test:
             raise
         message(str(exc))
     except Exception:
         logging.exception("Desktop startup failed")
+        if startup:
+            startup.close()
         if args.smoke_test or args.gui_smoke_test:
             raise
         message("启动未完成。研究资料仍保存在原目录，请查看资料目录 logs 中的诊断记录；Windows 窗口组件需要 Microsoft Edge WebView2 Runtime；Mac 请查看应用启动日志。")
