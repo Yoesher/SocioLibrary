@@ -91,7 +91,9 @@ if (-not (Test-Path -LiteralPath $installedExe) -or (Get-FileHash -LiteralPath $
 }
 Assert-ResearchUnchanged
 $cleanup = Get-Content (Join-Path $installDir 'bundle-cleanup.json') -Raw | ConvertFrom-Json
-if ($cleanup.errors -ne 0 -or $cleanup.preserved_files -lt 2) { throw 'Overlay upgrade did not preserve user-owned files' }
+# Only the changed, manifest-listed header contributes to preserved_files.
+# The unlisted PDF is authenticated separately below; cleanup never visits it.
+if ($cleanup.errors -ne 0 -or $cleanup.preserved_files -lt 1) { throw 'Overlay upgrade did not preserve the modified header' }
 $remainingDeveloperFiles = @(Get-ChildItem -LiteralPath (Join-Path $installDir '_internal/torch/include') -File -Recurse)
 if ($remainingDeveloperFiles.Count -ne 2) { throw 'Overlay upgrade reintroduced obsolete developer files' }
 if ((Get-FileHash -LiteralPath $modifiedHeader).Hash -ne $modifiedHeaderHash -or
