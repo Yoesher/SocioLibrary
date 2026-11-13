@@ -2,13 +2,15 @@
 
 <p align="center"><img src="docs/assets/sociolibrary-cover.svg" alt="SocioLibrary" width="1280"></p>
 
-<p align="center"><strong>把文献连成研究。</strong><br>本地优先的文献工作台，将 Zotero、检索、阅读与研究图谱放在一起。</p>
+<p align="center"><strong>把文献连成研究。</strong><br>面向社会科学的本地研究工作台，将 Zotero、检索、证据阅读与研究图谱放在一起。</p>
 
 <p align="center"><a href="https://github.com/Yoesher/SocioLibrary/releases/latest"><strong>下载软件</strong></a> · <a href="docs/windows.md">开始使用</a> · <a href="docs/README.md">使用文档</a> · <a href="https://github.com/Yoesher/SocioLibrary/issues">反馈问题</a></p>
 
 ## 下载
 
 **当前版本 0.12.3** · Windows 10 / 11 x64 · macOS 15+ 预览版
+
+0.13 的社会科学工作台正在验证：11 个研究视角、跨学科中英术语、方法审读与综述任务。[了解本轮改动](docs/social-science.md)
 
 | 你的电脑 | 软件包 | 使用方式 |
 | --- | --- | --- |

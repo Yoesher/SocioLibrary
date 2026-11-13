@@ -1,0 +1,15 @@
+.research-lens {margin-bottom: 22px; padding-bottom: 20px; border-bottom: 1px solid var(--border, #dce1e4)}
+.research-lens-heading {display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap}
+.research-lens-heading label {margin:0; font-weight:600}
+.research-lens-heading select {width:auto; max-width:100%; min-width:205px; margin:0}
+.research-lens #research-focus {margin:12px 0 8px; line-height:1.65}
+.research-examples {display:flex; gap:8px; flex-wrap:wrap; margin:10px 0}
+.research-example {background:var(--surface, transparent); color:var(--accent, inherit); border:1px solid var(--border, #dce1e4); padding:7px 12px; border-radius:999px; font-size:.86rem; font-weight:400; box-shadow:none}
+.research-example:hover {filter:brightness(.96)}
+.research-route {margin-top:12px; font-size:.9rem}
+.research-route summary {cursor:pointer; color:var(--accent, inherit)}
+.research-route ol {line-height:1.8; padding-left:22px}
+.research-route .toolbar {gap:8px; flex-wrap:wrap}
+.research-current {font-size:.86rem; color:var(--muted, #667085)}
+@media (prefers-reduced-motion: reduce) {.research-example {transition:none}}
+@media (max-width:650px) {.research-lens-heading {align-items:stretch; flex-direction:column}.research-lens-heading select {width:100%}}

@@ -4,7 +4,7 @@ import re
 
 from .retrieval import reciprocal_rank_fusion
 
-# Original, small sociology glossary; it is query expansion, not an LLM translation.
+# Original social science glossary. Query expansion does not translate arbitrary sentences.
 CONCEPTS = [
     (['生育支持政策', '生育支持'], ['fertility support', 'family policy', 'parental leave']),
     (['生育意愿', '生育计划'], ['fertility intentions', 'childbearing intentions']),
@@ -33,6 +33,42 @@ CONCEPTS = [
     (['教育'], ['education']), (['就业'], ['employment']),
     (['女性'], ['women', 'female']), (['男性'], ['men', 'male']),
     (['迁移', '移民'], ['migration']), (['城乡'], ['rural urban']),
+    (['教育不平等'], ['educational inequality']), (['教育公平'], ['educational equity', 'educational equality']),
+    (['学习机会'], ['opportunity to learn', 'learning opportunities']),
+    (['教师专业发展'], ['teacher professional development']),
+    (['形成性评价'], ['formative assessment']), (['学习成效'], ['learning outcomes']),
+    (['学习动机'], ['learning motivation', 'academic motivation']),
+    (['收入不平等'], ['income inequality']), (['人力资本'], ['human capital']),
+    (['公共治理'], ['public governance']), (['政策执行'], ['policy implementation']),
+    (['政策扩散'], ['policy diffusion']), (['行政负担'], ['administrative burden']),
+    (['官僚组织'], ['bureaucracy', 'bureaucratic organization']),
+    (['制度信任'], ['institutional trust']), (['政策评估'], ['policy evaluation']),
+    (['自我效能'], ['self efficacy', 'self-efficacy']), (['认知偏差'], ['cognitive bias', 'cognitive biases']),
+    (['群际关系'], ['intergroup relations']), (['社会认同'], ['social identity']),
+    (['决策'], ['decision making']),
+    (['媒介素养'], ['media literacy']), (['错误信息'], ['misinformation']),
+    (['议程设置'], ['agenda setting', 'agenda-setting']), (['框架分析'], ['frame analysis', 'framing analysis']),
+    (['算法推荐'], ['algorithmic recommendation']), (['选择性接触'], ['selective exposure']),
+    (['数字平台'], ['digital platforms']),
+    (['空间不平等'], ['spatial inequality']), (['公共服务'], ['public services']),
+    (['地方依恋'], ['place attachment']), (['城市更新'], ['urban renewal', 'urban regeneration']),
+    (['空间正义'], ['spatial justice']),
+    (['历史制度主义'], ['historical institutionalism']), (['路径依赖'], ['path dependence']),
+    (['档案研究'], ['archival research']), (['口述史'], ['oral history']),
+    (['集体记忆'], ['collective memory']),
+    (['民族志'], ['ethnography']), (['地方性知识'], ['local knowledge']),
+    (['亲属关系'], ['kinship']), (['文化实践'], ['cultural practices']),
+    (['参与观察'], ['participant observation']), (['反身性'], ['reflexivity']),
+    (['法律意识'], ['legal consciousness']), (['司法可及性'], ['access to justice']),
+    (['程序正义'], ['procedural justice']), (['法律多元主义'], ['legal pluralism']),
+    (['因果推断'], ['causal inference']), (['双重差分'], ['difference in differences', 'difference-in-differences']),
+    (['回归不连续', '断点回归'], ['regression discontinuity']), (['工具变量'], ['instrumental variables']),
+    (['随机对照试验', '随机对照实验'], ['randomized controlled trial', 'randomised controlled trial']),
+    (['过程追踪'], ['process tracing']), (['主题分析'], ['thematic analysis']),
+    (['扎根理论'], ['grounded theory']), (['混合方法'], ['mixed methods']),
+    (['元分析', '荟萃分析'], ['meta analysis', 'meta-analysis']),
+    (['系统综述'], ['systematic review']), (['定性研究', '质性研究'], ['qualitative research']),
+    (['定量研究'], ['quantitative research']), (['文本分析'], ['text analysis']),
 ]
 
 

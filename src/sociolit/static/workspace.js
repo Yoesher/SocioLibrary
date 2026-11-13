@@ -147,7 +147,7 @@
     add('comparison',window.isLiteratureDirty?.(),'文献对照表、对照篮或 AI 草稿尚待处理','literature-view');
     add('graph',window.isGraphDirty?.()||window.isGraphNotebookDirty?.(),'文献关系或研究图谱名称尚未保存','graph-view');
     add('journal',window.isJournalDirty?.(),'期刊来源正在编辑，尚未保存或取消','journals-view');
-    add('busy',exporting||searchBusy||window.isAIBusy?.()||window.isLiteratureBusy?.()||window.isJournalBusy?.()||window.isGraphBusy?.()||libraryStatus?.library_busy||libraryStatus?.job?.state==='running','正在检索、导出、同步或处理资料，请等待完成','');
+    add('busy',exporting||searchBusy||window.isAIBusy?.()||window.isLiteratureBusy?.()||window.isJournalBusy?.()||window.isResearchProfileBusy?.()||window.isGraphBusy?.()||libraryStatus?.library_busy||libraryStatus?.job?.state==='running','正在检索、导出、同步或处理资料，请等待完成','');
     return rows;
   }
   window.getUpgradeBlockers = upgradeBlockers;

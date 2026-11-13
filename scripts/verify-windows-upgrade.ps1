@@ -29,9 +29,9 @@ function Run-Setup($exe, $arguments, $mustSucceed = $true) {
     if ($mustSucceed -and $process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
     return $process.ExitCode
 }
-gh release download v0.12.2 --repo $env:GITHUB_REPOSITORY --pattern 'SocioLibrary-0.12.2-Windows-x64-Setup.exe' --dir $root
+gh release download v0.12.3 --repo $env:GITHUB_REPOSITORY --pattern 'SocioLibrary-0.12.3-Windows-x64-Setup.exe' --dir $root
 if ($LASTEXITCODE -ne 0) { throw 'Cannot retrieve previous public installer' }
-$previous = Join-Path $root 'SocioLibrary-0.12.2-Windows-x64-Setup.exe'
+$previous = Join-Path $root 'SocioLibrary-0.12.3-Windows-x64-Setup.exe'
 $common = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-')
 Run-Setup $previous ($common + @("/DIR=`"$installDir`"")) | Out-Null
 $installedExe = Join-Path $installDir 'SocioLibrary.exe'
@@ -39,10 +39,17 @@ $oldHash = (Get-FileHash -LiteralPath $installedExe).Hash
 Assert-ResearchUnchanged
 $bundle = Get-Content dist/SocioLibrary/bundle-manifest.json -Raw | ConvertFrom-Json
 $modifiedHeader = $bundle.pruned | ForEach-Object { Join-Path $installDir $_.path } | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-if (-not $modifiedHeader) { throw 'Previous installation has no expected developer header' }
+if (-not $modifiedHeader) {
+    # The preceding public release is already slim. Restore a nonmatching
+    # user-owned canary at an obsolete header path; it must remain untouched.
+    $modifiedHeader = Join-Path $installDir $bundle.pruned[0].path
+    New-Item -ItemType Directory -Force (Split-Path -Parent $modifiedHeader) | Out-Null
+    [System.IO.File]::WriteAllText($modifiedHeader, 'Synthetic user-owned header in an already slim installation')
+}
 Add-Content -LiteralPath $modifiedHeader -Value 'Synthetic user-modified header canary'
 $modifiedHeaderHash = (Get-FileHash -LiteralPath $modifiedHeader).Hash
 $privateCanary = Join-Path $installDir '_internal/torch/include/synthetic-user-paper.pdf'
+New-Item -ItemType Directory -Force (Split-Path -Parent $privateCanary) | Out-Null
 [System.IO.File]::WriteAllText($privateCanary, 'Synthetic private canary; never delete as part of runtime cleanup')
 $privateCanaryHash = (Get-FileHash -LiteralPath $privateCanary).Hash
 $desktop = [Environment]::GetFolderPath('Desktop')
@@ -84,7 +91,9 @@ if (-not (Test-Path -LiteralPath $installedExe) -or (Get-FileHash -LiteralPath $
 }
 Assert-ResearchUnchanged
 $cleanup = Get-Content (Join-Path $installDir 'bundle-cleanup.json') -Raw | ConvertFrom-Json
-if ($cleanup.removed_files -lt 8000 -or $cleanup.removed_bytes -lt 30000000) { throw 'Overlay upgrade did not remove verified development files' }
+if ($cleanup.errors -ne 0 -or $cleanup.preserved_files -lt 2) { throw 'Overlay upgrade did not preserve user-owned files' }
+$remainingDeveloperFiles = @(Get-ChildItem -LiteralPath (Join-Path $installDir '_internal/torch/include') -File -Recurse)
+if ($remainingDeveloperFiles.Count -ne 2) { throw 'Overlay upgrade reintroduced obsolete developer files' }
 if ((Get-FileHash -LiteralPath $modifiedHeader).Hash -ne $modifiedHeaderHash -or
     (Get-FileHash -LiteralPath $privateCanary).Hash -ne $privateCanaryHash) { throw 'Runtime cleanup modified a user canary' }
 $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutFile)

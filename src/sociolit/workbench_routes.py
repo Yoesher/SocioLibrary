@@ -2,7 +2,7 @@ from fastapi import Header, HTTPException
 from filelock import FileLock
 from pydantic import BaseModel, Field
 
-from . import appearance, graph
+from . import appearance, graph, research_profiles
 
 
 class Appearance(BaseModel):
@@ -11,6 +11,10 @@ class Appearance(BaseModel):
     motion: str = Field(max_length=20)
     density: str = Field(max_length=20)
     auto_embed: bool
+
+
+class ResearchProfile(BaseModel):
+    identity: str = Field(min_length=1, max_length=30)
 
 
 class GraphQuery(BaseModel):
@@ -57,6 +61,19 @@ def attach_workbench(app, store, authorize, mutate):
     def appearance_get(x_sociolit_token: str | None = Header(default=None)):
         authorize(x_sociolit_token)
         return appearance.read(store.directory)
+
+    @app.get('/api/research/profile')
+    def research_profile_get(x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        try:
+            return research_profiles.catalog(store.directory)
+        except (ValueError, OSError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @app.post('/api/research/profile')
+    def research_profile_save(body: ResearchProfile, x_sociolit_token: str | None = Header(default=None)):
+        authorize(x_sociolit_token)
+        return write(lambda: research_profiles.save(store.directory, body.identity))
 
     @app.post('/api/appearance')
     def appearance_save(body: Appearance, x_sociolit_token: str | None = Header(default=None)):

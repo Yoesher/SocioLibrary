@@ -10,7 +10,7 @@ from .store import Store
 
 
 def parser():
-    root = argparse.ArgumentParser(description="SocioLibrary: 本地社会学文献知识库")
+    root = argparse.ArgumentParser(description="SocioLibrary: 本地社会科学文献研究工作台")
     sub = root.add_subparsers(dest="command", required=True)
     for name in ("serve", "import-zotero", "search", "embed", "prepare-model", "discover", "status"):
         command = sub.add_parser(name)

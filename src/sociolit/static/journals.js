@@ -34,6 +34,14 @@
   }
   window.renderJournalSubscriptions=(values,isBusy)=>{const next=JSON.stringify(values)+'|'+isBusy;if(next===signature)return;signature=next;journals=values;busy=isBusy;render();};
   el('journal-new').onclick=()=>edit();
+  window.prepareResearchJournal=starter=>{
+    if(working||busy||dirty){message('请先完成当前期刊编辑或资料任务。',true);notice('请先完成当前期刊编辑或资料任务。',true);return;}
+    showView('journal-view');
+    const existing=journals.find(row=>row.name===starter.name);
+    edit(existing||null);
+    if(!existing){el('journal-name').value=starter.name;el('journal-provider').value='crossref';el('journal-issns').value=starter.issn;providerFields();dirty=true;}
+    message('这是研究领域的期刊起点，尚未新增订阅。核对刊名和 ISSN 后点击“验证并保存”。');
+  };
   el('journal-cancel').onclick=()=>{if(working)return;dirty=false;el('journal-editor').hidden=true;message('已取消本次编辑，原订阅保留。');};
   el('journal-form').addEventListener('input',()=>{dirty=true;});
   el('journal-provider').onchange=()=>{dirty=true;providerFields();};

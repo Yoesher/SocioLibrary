@@ -11,8 +11,8 @@ from html import escape
 from .ai_context import evidence, fingerprint
 from .literature import get_item
 
-FIELDS = {"question": "研究问题", "theory": "理论视角", "data": "数据与对象", "methods": "研究方法",
-          "findings": "主要发现", "limits": "局限与适用范围"}
+FIELDS = {"question": "问题与命题", "theory": "概念与理论", "data": "材料与对象", "methods": "方法与论证",
+          "findings": "发现与主张", "limits": "局限与适用范围"}
 
 
 def initialize(store):

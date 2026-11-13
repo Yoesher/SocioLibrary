@@ -5,6 +5,8 @@
   window.isAISettingsDirty = () => dirty;
   const types = {pdf: 'PDF 原文', ocr: 'OCR 文字（需核对）', metadata: '书目信息', note: '个人笔记', annotation: 'Zotero 摘录与个人批注'};
   function invalidate() {preview = null; el('ai-preview').hidden = true; el('ai-consent').checked = false;}
+  document.addEventListener('researchprofilechange', invalidate);
+  document.addEventListener('airesearchtask', () => {invalidate(); if (!presets.length && token) loadProfiles();});
   function updateSelection() {
     invalidate(); el('ai-selected').replaceChildren();
     el('ai-selection-count').textContent = `已选 ${selected.size} / 8 个片段；选择本身不会发送资料。`;
@@ -133,7 +135,7 @@
     preview = await api('/api/ai/preview', {identity: el('ai-connection').value,
       question: el('ai-question').value, task: el('ai-task').value,
       sources: [...selected.values()].map(row => ({chunk_id: row.id, digest: row.source_digest}))});
-    el('ai-preview-destination').textContent = `${preview.name} · ${preview.model} · ${preview.base_url}`;
+    el('ai-preview-destination').textContent = `${preview.name} · ${preview.model} · ${preview.base_url} · ${preview.research_profile}`;
     el('ai-preview-size').textContent = `将发送 ${preview.sources.length} 个片段，提示文字共 ${preview.characters.toLocaleString()} 字符，最多输出 ${preview.max_output_tokens} tokens。字符数不等于 token 数，实际费用以服务商计费为准。`;
     el('ai-preview-sources').replaceChildren(); renderSources(el('ai-preview-sources'), preview.sources);
     el('ai-full-prompt').textContent = '系统提示：\n' + preview.system + '\n\n输入：\n' + preview.prompt;

@@ -2,13 +2,15 @@
 
 <p align="center"><img src="docs/assets/sociolibrary-cover.svg" alt="SocioLibrary" width="1280"></p>
 
-<p align="center"><strong>Keep your literature. Connect your thinking.</strong><br>A local-first workspace for Zotero, literature search, reading and research graphs.</p>
+<p align="center"><strong>Keep your literature. Connect your thinking.</strong><br>A local-first social science workspace for Zotero, literature search, evidence review and research graphs.</p>
 
 <p align="center"><a href="https://github.com/Yoesher/SocioLibrary/releases/latest"><strong>Download</strong></a> · <a href="docs/en/quick-start.md">Get started</a> · <a href="docs/README.md">Documentation</a> · <a href="https://github.com/Yoesher/SocioLibrary/issues">Report an issue</a></p>
 
 ## Download
 
 **Current version: 0.12.3** · Windows 10 / 11 x64 · macOS 15+ preview
+
+The 0.13 social science workspace is undergoing validation: 11 research lenses, cross-disciplinary bilingual terminology, methods review and literature-review tasks. [Read the guide](docs/en/social-science.md)
 
 | Your computer | Package | How to use it |
 | --- | --- | --- |

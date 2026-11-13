@@ -121,11 +121,11 @@
     const data=await read('/api/ai/profiles');el('comparison-ai-connection').replaceChildren();
     for(const profile of data.profiles){const option=element('option',profile.name+' · '+profile.model);option.value=profile.id;el('comparison-ai-connection').append(option);}
     if(data.profiles.some(profile=>profile.id===previous))el('comparison-ai-connection').value=previous;}
-  el('comparison-ai-connection').onchange=invalidate;el('comparison-ai-question').oninput=invalidate;
+  document.addEventListener('researchprofilechange',invalidate);el('comparison-ai-connection').onchange=invalidate;el('comparison-ai-question').oninput=invalidate;
   el('comparison-ai-prepare').onclick=()=>{if(!board||!keepEdits())return;working(async()=>{
     if(candidate){notice('请先另存或关闭当前 AI 草稿，再生成新的草稿。',true);return;}
     invalidate();preview=await api('/api/ai/comparison/preview',{identity:board.id,profile_id:el('comparison-ai-connection').value,question:el('comparison-ai-question').value});
-    el('compare-preview').hidden=false;el('compare-destination').textContent=preview.name+' · '+preview.model+' · '+preview.base_url;
+    el('compare-preview').hidden=false;el('compare-destination').textContent=preview.name+' · '+preview.model+' · '+preview.base_url+' · '+preview.research_profile;
     el('compare-full-prompt').textContent='系统提示：\n'+preview.system+'\n\n输入：\n'+preview.prompt;
     el('compare-output-hint').textContent=`本次 ${preview.sources.length} 个片段，最多输出 ${preview.max_output_tokens} tokens；可能计费。预览十分钟有效，发送一次。`;
     notice('已在本机生成比较预览；尚未调用 AI。');});};
