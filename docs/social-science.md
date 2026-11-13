@@ -51,7 +51,7 @@ SocioLibrary 面向不同社会科学研究传统，连接本地文献、研究�
 
 ```powershell
 python scripts/create_social_science_demo.py --directory ./demo-social-science
-python -m sociolit.desktop --data-dir ./demo-social-science
+python -m sociolit serve --data-dir ./demo-social-science --open-browser
 ```
 
-正式研究请使用有权读取和处理的材料。演示库只是功能检查夹具，不能用于证明真实科研效果。
+此命令在本机浏览器展示独立演示库，不会切换桌面软件记住的正式文库，也不会启用默认期刊检查。关闭终端结束演示。正式研究请使用有权读取和处理的材料。演示库只是功能检查夹具，不能用于证明真实科研效果。

@@ -8,16 +8,16 @@
 
 ## Download
 
-**Current version: 0.12.3** · Windows 10 / 11 x64 · macOS 15+ preview
+**Current version: 0.13.0** · Windows 10 / 11 x64 · macOS 15+ preview
 
-The 0.13 social science workspace is undergoing validation: 11 research lenses, cross-disciplinary bilingual terminology, methods review and literature-review tasks. [Read the guide](docs/en/social-science.md)
+The social science workspace includes 11 research lenses, cross-disciplinary bilingual terminology, methods review and literature-review tasks. [Read the guide](docs/en/social-science.md)
 
 | Your computer | Package | How to use it |
 | --- | --- | --- |
-| **Windows · Recommended** | [**Download installer**](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.3/SocioLibrary-0.12.3-Windows-x64-Setup.exe) | Install once; supports in-app upgrades |
-| Windows · Portable | [Download complete ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.3/SocioLibrary-0.12.3-Windows-x64-Portable.zip) | Extract the entire folder and keep all program files |
-| Mac · Apple silicon | [Download arm64 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.3/SocioLibrary-0.12.3-macOS-arm64.zip) | Quit the previous version before replacing the app |
-| Mac · Intel | [Download x86_64 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.3/SocioLibrary-0.12.3-macOS-x86_64.zip) | Quit the previous version before replacing the app |
+| **Windows · Recommended** | [**Download installer**](https://github.com/Yoesher/SocioLibrary/releases/download/v0.13.0/SocioLibrary-0.13.0-Windows-x64-Setup.exe) | Install once; supports in-app upgrades |
+| Windows · Portable | [Download complete ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.13.0/SocioLibrary-0.13.0-Windows-x64-Portable.zip) | Extract the entire folder and keep all program files |
+| Mac · Apple silicon | [Download arm64 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.13.0/SocioLibrary-0.13.0-macOS-arm64.zip) | Quit the previous version before replacing the app |
+| Mac · Intel | [Download x86_64 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.13.0/SocioLibrary-0.13.0-macOS-x86_64.zip) | Quit the previous version before replacing the app |
 
 Existing Windows users can check for updates in the app, or quit and run the new installer over the existing installation. Your library, models, notes and settings are retained, with a local snapshot before upgrading. SHA-256 values are in the [release notes](https://github.com/Yoesher/SocioLibrary/releases/latest).
 
@@ -68,7 +68,7 @@ Built-in sources cover current and archived tables of contents for 《社会》 
 
 Apple, Windows and Material-inspired interface styles can be previewed and saved in Data and settings. Layout, controls, typography and motion change together; color palettes are selected separately.
 
-0.12.3 focuses on startup, idle resource use, durable settings writes and a smaller Windows installation. Database commits invalidate cached display statistics; task and installation decisions remain live. Pruning targets authenticated program artifacts and preserves research data and modified files. [Changelog](CHANGELOG.md) · [Upgrade and recovery](docs/windows.md#资料升级与退出) (Chinese)
+0.13.0 focuses on startup, idle resource use, durable settings writes and a smaller Windows installation. Database commits invalidate cached display statistics; task and installation decisions remain live. Pruning targets authenticated program artifacts and preserves research data and modified files. [Changelog](CHANGELOG.md) · [Upgrade and recovery](docs/windows.md#资料升级与退出) (Chinese)
 
 </details>
 

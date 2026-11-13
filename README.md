@@ -8,16 +8,16 @@
 
 ## 下载
 
-**当前版本 0.12.3** · Windows 10 / 11 x64 · macOS 15+ 预览版
+**当前版本 0.13.0** · Windows 10 / 11 x64 · macOS 15+ 预览版
 
-0.13 的社会科学工作台正在验证：11 个研究视角、跨学科中英术语、方法审读与综述任务。[了解本轮改动](docs/social-science.md)
+社会科学工作台提供：11 个研究视角、跨学科中英术语、方法审读与综述任务。[了解本轮改动](docs/social-science.md)
 
 | 你的电脑 | 软件包 | 使用方式 |
 | --- | --- | --- |
-| **Windows · 推荐** | [**下载安装版**](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.3/SocioLibrary-0.12.3-Windows-x64-Setup.exe) | 安装后使用；支持软件内升级 |
-| Windows · 免安装 | [下载完整 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.3/SocioLibrary-0.12.3-Windows-x64-Portable.zip) | 完整解压后运行，保留全部程序文件 |
-| Mac · Apple 芯片 | [下载 arm64 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.3/SocioLibrary-0.12.3-macOS-arm64.zip) | 退出旧版后替换应用 |
-| Mac · Intel 芯片 | [下载 x86_64 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.12.3/SocioLibrary-0.12.3-macOS-x86_64.zip) | 退出旧版后替换应用 |
+| **Windows · 推荐** | [**下载安装版**](https://github.com/Yoesher/SocioLibrary/releases/download/v0.13.0/SocioLibrary-0.13.0-Windows-x64-Setup.exe) | 安装后使用；支持软件内升级 |
+| Windows · 免安装 | [下载完整 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.13.0/SocioLibrary-0.13.0-Windows-x64-Portable.zip) | 完整解压后运行，保留全部程序文件 |
+| Mac · Apple 芯片 | [下载 arm64 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.13.0/SocioLibrary-0.13.0-macOS-arm64.zip) | 退出旧版后替换应用 |
+| Mac · Intel 芯片 | [下载 x86_64 ZIP](https://github.com/Yoesher/SocioLibrary/releases/download/v0.13.0/SocioLibrary-0.13.0-macOS-x86_64.zip) | 退出旧版后替换应用 |
 
 已有 Windows 版本可进入 **软件更新 → 检查更新**，也可退出后运行安装包覆盖升级。原文库、模型、笔记和设置继续沿用，升级前会建立本机快照。校验值见[发行说明](https://github.com/Yoesher/SocioLibrary/releases/latest)。
 
@@ -66,7 +66,7 @@ Mac 包面向 macOS 15+，尚未 Apple Developer ID 签名或公证；Intel 版�
 
 Apple、Windows、Material 三套界面风格可在“资料与设置”中预览、保存和切换；布局、控件、字体层级与动效一同变化，配色另行选择。
 
-0.12.3 集中优化启动、空闲资源占用、配置保存与 Windows 安装文件体积。数据更新会使展示统计缓存失效；任务和升级判断保持实时。精简与升级清理仅针对经校验的程序文件，保留研究资料和已修改文件。[版本记录](CHANGELOG.md) · [升级与恢复](docs/windows.md#资料升级与退出)
+0.13.0 集中优化启动、空闲资源占用、配置保存与 Windows 安装文件体积。数据更新会使展示统计缓存失效；任务和升级判断保持实时。精简与升级清理仅针对经校验的程序文件，保留研究资料和已修改文件。[版本记录](CHANGELOG.md) · [升级与恢复](docs/windows.md#资料升级与退出)
 
 </details>
 

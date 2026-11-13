@@ -4,6 +4,8 @@
 
 ## 使用软件
 
+- [社会科学研究视角与证据任务](social-science.md) · [English guide](en/social-science.md)
+- [教育智能体大赛参赛定位与准备](competition-2026.md)
 - [Windows 安装、使用与升级](windows.md)
 - [Mac 预览版安装与功能范围](macos.md)
 - [保存研究图谱、期刊收件箱与 Obsidian 导出](v0.12-research-workspace.md)
